@@ -50,7 +50,7 @@ const financeSlice = createSlice({
                     if (newSplits.length === 0) return { ...expense, splits: [] };
 
                     // Redistribute logic (Simplified: Convert to EVEN for remaining)
-                    // This handles both EVEN (re-divide by N-1) and UNEVEN (ambiguous, so we convert to EVEN)
+                    // This handles both EVEN (re-divide by N-1) and EXACT (ambiguous, so we convert to EVEN)
                     const newAmountPerPerson = expense.amount / newSplits.length;
                     const updatedSplits = newSplits.map(s => ({
                         ...s,

@@ -12,7 +12,7 @@ export interface Split {
 
 export const SplitType = {
     EVEN: 'even',
-    UNEVEN: 'uneven',
+    EXACT: 'uneven',
     PERCENTAGE: 'percentage',
     SHARES: 'shares'
 } as const;

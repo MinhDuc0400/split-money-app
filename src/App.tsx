@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useMemo, useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { GroupProvider } from './context/GroupContext';
 import { Layout } from './components/Layout';
@@ -13,30 +13,46 @@ import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './store';
 
-function App() {
-    const [activeTab, setActiveTab] = useState<AppTab>(AppTab.DASHBOARD);
+function AppInner() {
+    const location = useLocation();
+    const navigate = useNavigate();
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
 
+    const activeTab = useMemo(() => {
+        return location.pathname.startsWith('/members') ? AppTab.MEMBERS : AppTab.DASHBOARD;
+    }, [location.pathname]);
+
+    const handleTabChange = (tab: AppTab) => {
+        if (tab === AppTab.DASHBOARD) navigate('/');
+        if (tab === AppTab.MEMBERS) navigate('/members');
+    };
+
+    return (
+        <Layout
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            onAddExpense={() => setIsAddExpenseOpen(true)}
+        >
+            <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/members" element={<MemberManager />} />
+                <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+            {isAddExpenseOpen && (
+                <AddExpense onClose={() => setIsAddExpenseOpen(false)} />
+            )}
+        </Layout>
+    );
+}
+
+function App() {
     return (
         <Provider store={store}>
             <PersistGate loading={null} persistor={persistor}>
                 <ThemeProvider>
                     <GroupProvider>
                         <Router>
-                            <Layout
-                                activeTab={activeTab}
-                                onTabChange={setActiveTab}
-                                onAddExpense={() => setIsAddExpenseOpen(true)}
-                            >
-                                <Routes>
-                                    <Route path="/" element={<Dashboard />} />
-                                    <Route path="/members" element={<MemberManager />} />
-                                    <Route path="*" element={<Navigate to="/" replace />} />
-                                </Routes>
-                                {isAddExpenseOpen && (
-                                    <AddExpense onClose={() => setIsAddExpenseOpen(false)} />
-                                )}
-                            </Layout>
+                            <AppInner />
                         </Router>
                     </GroupProvider>
                 </ThemeProvider>

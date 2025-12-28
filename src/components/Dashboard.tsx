@@ -5,6 +5,21 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ExpenseForm } from './ExpenseForm';
 import { SplitType } from '../types';
 
+// Helper: infer split type label from expense data when explicit type is unknown or custom
+function inferSplitType(expense: any): 'Equal' | 'Exact' | 'Custom' {
+    try {
+        if (!expense || !Array.isArray(expense.splits) || expense.splits.length === 0) return 'Custom';
+        const amounts = expense.splits.map((s: any) => Number(s.amount ?? 0));
+        const total = amounts.reduce((a: number, b: number) => a + b, 0);
+        if (total === 0) return 'Custom';
+        const avg = total / amounts.length;
+        const isEven = amounts.every((a: number) => Math.abs(a - avg) < 0.01);
+        return isEven ? 'Equal' : 'Exact';
+    } catch {
+        return 'Custom';
+    }
+}
+
 export function Dashboard() {
     const { members, expenses, settlements, deleteExpense, updateExpense } = useGroup();
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
@@ -34,7 +49,7 @@ export function Dashboard() {
         payerId: expenseToEdit.payerId,
         splitType: expenseToEdit.splitType,
         splits: expenseToEdit.splits,
-        manualAmounts: expenseToEdit.splitType === SplitType.UNEVEN
+        manualAmounts: expenseToEdit.splitType === SplitType.EXACT
             ? expenseToEdit.splits.reduce((acc, s) => ({ ...acc, [s.memberId]: s.amount.toString() }), {} as Record<string, string>)
             : {}
     } : undefined;
@@ -141,9 +156,26 @@ export function Dashboard() {
                                             </div>
                                             <div>
                                                 <p className="font-semibold text-base line-clamp-1">{expense.description}</p>
-                                                <p className="text-xs text-muted-foreground mt-0.5">
-                                                    <span className="font-medium text-foreground">{getMemberName(expense.payerId)}</span> paid ${expense.amount.toFixed(2)}
-                                                </p>
+                                                <div className="flex items-center gap-2 mt-0.5">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        <span className="font-medium text-foreground">{getMemberName(expense.payerId)}</span> paid ${expense.amount.toFixed(2)}
+                                                    </p>
+                                                    {/* Split type badge */}
+                                                    <span
+                                                        className="text-[10px] uppercase tracking-wide bg-secondary text-muted-foreground px-2 py-0.5 rounded-md"
+                                                        aria-label={`Split type: ${
+                                                            expense.splitType === SplitType.EVEN ? 'Equal' :
+                                                            expense.splitType === SplitType.EXACT ? 'Exact' :
+                                                            expense.splitType === SplitType.PERCENTAGE ? 'Percent' :
+                                                            expense.splitType === SplitType.SHARES ? 'Shares' : 'Custom'
+                                                        }`}
+                                                    >
+                                                        {expense.splitType === SplitType.EVEN ? 'Equal' :
+                                                         expense.splitType === SplitType.EXACT ? 'Exact' :
+                                                         expense.splitType === SplitType.PERCENTAGE ? 'Percent' :
+                                                         expense.splitType === SplitType.SHARES ? 'Shares' : inferSplitType(expense)}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                         <div className="text-right flex items-center gap-4">
