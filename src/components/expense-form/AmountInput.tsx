@@ -1,4 +1,4 @@
-import { getCurrencySymbol, formatCurrencyInput, removeThousandsSeparator } from '../../lib/currency';
+import { getCurrencySymbol, formatCurrencyInput } from '../../lib/currency';
 
 interface AmountInputProps {
     amount: string;
@@ -38,7 +38,7 @@ export function AmountInput({ amount, setAmount, description, setDescription, cu
             <input
                 type="text"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={(e) => { setDescription(e.target.value); }}
                 placeholder="What is this for?"
                 className="w-full bg-transparent border-b border-border py-2 text-lg focus:outline-none focus:border-primary transition-colors text-center"
             />

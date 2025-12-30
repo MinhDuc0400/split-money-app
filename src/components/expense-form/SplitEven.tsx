@@ -27,7 +27,7 @@ export function SplitEven({ members, included, setIncluded, equalEach }: SplitEv
                         <input
                             type="checkbox"
                             checked={!!included[member.id]}
-                            onChange={(e) => setIncluded(prev => ({ ...prev, [member.id]: e.target.checked }))}
+                            onChange={(e) => { setIncluded(prev => ({ ...prev, [member.id]: e.target.checked })); }}
                             className="hidden"
                         />
                         <div className="w-6 h-6 rounded-full overflow-hidden">

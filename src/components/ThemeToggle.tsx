@@ -8,7 +8,7 @@ export function ThemeToggle({ className }: { className?: string }) {
 
     return (
         <button
-            onClick={() => setTheme(theme === Theme.DARK ? Theme.LIGHT : Theme.DARK)}
+            onClick={() => { setTheme(theme === Theme.DARK ? Theme.LIGHT : Theme.DARK); }}
             className={cn(
                 "p-2 rounded-full transition-colors hover:bg-secondary/80 text-foreground",
                 className

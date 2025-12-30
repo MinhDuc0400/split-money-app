@@ -23,7 +23,7 @@ export function SplitPercentage({ members, percentages, setPercentages, amount }
                         <input
                             type="number"
                             value={percentages[member.id] || ''}
-                            onChange={(e) => setPercentages(prev => ({ ...prev, [member.id]: e.target.value }))}
+                            onChange={(e) => { setPercentages(prev => ({ ...prev, [member.id]: e.target.value })); }}
                             className="w-full bg-card rounded-md py-1 pl-5 pr-2 text-right text-sm border focus:border-primary focus:outline-none"
                             placeholder="0"
                         />

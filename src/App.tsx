@@ -24,15 +24,21 @@ function AppInner() {
     }, [location.pathname]);
 
     const handleTabChange = (tab: AppTab) => {
-        if (tab === AppTab.DASHBOARD) navigate('/');
-        if (tab === AppTab.MEMBERS) navigate('/members');
+        if (tab === AppTab.DASHBOARD) {
+            void navigate('/');
+        }
+        if (tab === AppTab.MEMBERS) {
+            void navigate('/members');
+        }
     };
 
     return (
         <Layout
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            onAddExpense={() => setIsAddExpenseOpen(true)}
+            onAddExpense={() => {
+                setIsAddExpenseOpen(true);
+            }}
         >
             <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -41,7 +47,9 @@ function AppInner() {
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             {isAddExpenseOpen && (
-                <AddExpense onClose={() => setIsAddExpenseOpen(false)} />
+                <AddExpense onClose={() => {
+                    setIsAddExpenseOpen(false);
+                }} />
             )}
         </Layout>
     );

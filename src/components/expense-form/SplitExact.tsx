@@ -32,7 +32,7 @@ export function SplitExact({ members, manualAmounts, setManualAmounts, amount, c
                         <input
                             type="text"
                             value={manualAmounts[member.id] || ''}
-                            onChange={(e) => handleAmountChange(member.id, e.target.value)}
+                            onChange={(e) => { handleAmountChange(member.id, e.target.value); }}
                             className="w-full bg-card rounded-md py-1 pl-5 pr-2 text-right text-sm border focus:border-primary focus:outline-none"
                             placeholder="0"
                         />

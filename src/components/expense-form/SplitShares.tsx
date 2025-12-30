@@ -24,7 +24,7 @@ export function SplitShares({ members, shares, setShares }: SplitSharesProps) {
                             step="1"
                             min="0"
                             value={shares[member.id] || ''}
-                            onChange={(e) => setShares(prev => ({ ...prev, [member.id]: e.target.value }))}
+                            onChange={(e) => { setShares(prev => ({ ...prev, [member.id]: e.target.value })); }}
                             className="w-full bg-card rounded-md py-1 pl-5 pr-2 text-right text-sm border focus:border-primary focus:outline-none"
                             placeholder="0"
                         />

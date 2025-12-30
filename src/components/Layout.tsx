@@ -54,14 +54,14 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
 
                 <nav className="flex-1 space-y-2">
                     <button
-                        onClick={() => onTabChange(AppTab.DASHBOARD)}
+                        onClick={() => { onTabChange(AppTab.DASHBOARD); }}
                         className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", activeTab === AppTab.DASHBOARD ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
                     >
                         <LayoutDashboard className="w-5 h-5" />
                         <span className="font-medium">Dashboard</span>
                     </button>
                     <button
-                        onClick={() => onTabChange(AppTab.MEMBERS)}
+                        onClick={() => { onTabChange(AppTab.MEMBERS); }}
                         className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", activeTab === AppTab.MEMBERS ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
                     >
                         <Users className="w-5 h-5" />
@@ -123,7 +123,7 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
                             icon={LayoutDashboard}
                             label="Home"
                             active={activeTab === AppTab.DASHBOARD}
-                            onClick={() => onTabChange(AppTab.DASHBOARD)}
+                            onClick={() => { onTabChange(AppTab.DASHBOARD); }}
                         />
                     </div>
 
@@ -134,7 +134,7 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
                             icon={Users}
                             label="Members"
                             active={activeTab === AppTab.MEMBERS}
-                            onClick={() => onTabChange(AppTab.MEMBERS)}
+                            onClick={() => { onTabChange(AppTab.MEMBERS); }}
                         />
                     </div>
                 </div>

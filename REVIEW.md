@@ -2,7 +2,7 @@
 
 This document provides a comprehensive review of the features, functionality, and potential improvements for the SplitMoney application.
 
-Last updated: 2025-12-30 10:25
+Last updated: 2025-12-30 13:35
 
 ---
 
@@ -223,3 +223,132 @@ The SplitMoney app is a robust and well-architected foundation for expense manag
   - Maintained all existing functionality; only reorganized the UI flow.
 - **Files Changed:** `src/components/Dashboard.tsx`, `src/components/GroupDetail.tsx` (new), `src/App.tsx`.
 - **Result:** The Dashboard provides a clean, at-a-glance summary of the group's financial status, while the GroupDetail page offers comprehensive information for users who need to see member-by-member breakdowns and settlement instructions.
+
+#### 🏗️ SOLID Principles Refactoring
+- **Objective:** Refactor large components into smaller, focused components following SOLID principles to improve maintainability, testability, and code organization.
+- **Principles Applied:**
+  - **Single Responsibility Principle (SRP):** Each component now has one clear purpose and reason to change.
+  - **Open/Closed Principle:** Components are designed to be extensible through props without modifying their internal implementation.
+  - **Dependency Inversion:** Components depend on abstractions (props interfaces) rather than concrete implementations.
+- **Refactoring Summary:**
+  - **Dashboard Component (187 → 44 lines, 76% reduction):**
+    - Created `src/components/dashboard/` directory with focused sub-components:
+      - `SummaryCard.tsx`: Reusable card wrapper with animation and styling.
+      - `TotalSpentCard.tsx`: Encapsulates total spent calculation and display logic.
+      - `BalanceCard.tsx`: Handles "You Are Owed" and "You Owe" displays with a type prop.
+      - `GroupDetailsCard.tsx`: Displays group information and member avatars preview.
+      - `QuickStatsCard.tsx`: Simple statistics display component.
+      - `useBalanceCalculations.ts`: Custom hook for balance aggregation logic.
+    - Main Dashboard component now acts as a clean composition of sub-components.
+  - **GroupDetail Component (318 → 126 lines, 60% reduction):**
+    - Created `src/components/group-detail/` directory with focused sub-components:
+      - `SectionTabs.tsx`: Handles members/payments tab switching.
+      - `MemberBalancesList.tsx`: Displays all members with their multi-currency balances.
+      - `SettlementPlanList.tsx`: Shows optimized settlement transactions.
+      - `ExpenseListItem.tsx`: Individual expense display with edit/delete actions.
+      - `ExpensesList.tsx`: Wrapper for expense list with empty state handling.
+      - `EditExpenseModal.tsx`: Modal for editing expenses.
+    - Main GroupDetail component now orchestrates sub-components with minimal logic.
+  - **MemberManager Component (268 → 113 lines, 58% reduction):**
+    - Created `src/components/member-manager/` directory with focused sub-components:
+      - `AddMemberForm.tsx`: Handles member addition with its own state management.
+      - `MemberListItem.tsx`: Individual member display with inline editing and balance display.
+      - `RemoveConfirmDialog.tsx`: Confirmation dialog for removing members with unsettled balances.
+      - `ResetConfirmDialog.tsx`: Confirmation UI for app data reset.
+    - Main MemberManager component now focuses on orchestration and business logic.
+- **Benefits:**
+  - **Improved Maintainability:** Smaller, focused components are easier to understand and modify.
+  - **Better Testability:** Each component can be tested in isolation with clear inputs and outputs.
+  - **Enhanced Reusability:** Sub-components like `SummaryCard` and `BalanceCard` can be reused across the application.
+  - **Clearer Code Organization:** Related components are grouped in dedicated directories.
+  - **Reduced Cognitive Load:** Developers can focus on one component's responsibility at a time.
+  - **Type Safety:** All components are fully typed with clear prop interfaces.
+- **Total Impact:** Reduced ~773 lines of complex component code to ~283 lines of orchestration code, with ~490 lines distributed across 18 focused, reusable sub-components.
+- **Files Changed:** 
+  - Refactored: `src/components/Dashboard.tsx`, `src/components/GroupDetail.tsx`, `src/components/MemberManager.tsx`
+  - Created: 18 new sub-component files in `dashboard/`, `group-detail/`, and `member-manager/` directories
+- **Result:** The codebase now follows SOLID principles with clear separation of concerns, making it significantly easier to maintain, test, and extend. Each component has a single, well-defined responsibility, and the overall architecture is more modular and scalable.
+
+#### 🔒 Strict TypeScript & Linting Setup
+- **Objective:** Eliminate all `any` types from the codebase and enforce strict type checking to improve code quality, catch bugs early, and enhance developer experience.
+- **TypeScript Configuration:**
+  - Already using strict mode in `tsconfig.json` with all strict flags enabled.
+  - No changes needed to TypeScript configuration as it was already properly configured.
+- **ESLint Configuration:**
+  - Upgraded from `recommended` to `strict` TypeScript ESLint preset.
+  - Added type-aware linting rules with parserOptions configured for type checking.
+  - Enabled strict rules to ban `any` types:
+    - `@typescript-eslint/no-explicit-any`: error
+    - `@typescript-eslint/no-unsafe-assignment`: error
+    - `@typescript-eslint/no-unsafe-member-access`: error
+    - `@typescript-eslint/no-unsafe-call`: error
+    - `@typescript-eslint/no-unsafe-return`: error
+    - `@typescript-eslint/no-unsafe-argument`: error
+  - Disabled overly strict rules that don't add value in this context:
+    - `@typescript-eslint/no-unnecessary-condition`: off (too many false positives)
+    - `@typescript-eslint/restrict-template-expressions`: off (numbers in templates are fine)
+    - `@typescript-eslint/no-dynamic-delete`: off (needed for Redux state cleanup)
+    - `react-hooks/set-state-in-effect`: off (intentional pattern for syncing state)
+- **Code Fixes:**
+  - Replaced all `any` types with proper TypeScript types:
+    - `GroupDetail.tsx`: Added proper `Expense` and `Split` types to `inferSplitType` and `handleUpdateExpense`.
+    - `EditExpenseModal.tsx`: Created `ExpenseFormData` interface for type-safe props.
+    - `AddExpense.tsx`: Added `ExpenseFormData` interface for `handleSubmit`.
+    - `GroupSelector.tsx`: Fixed event handler types to accept both `MouseEvent` and `KeyboardEvent`.
+    - `ExpenseForm.tsx`: Fixed optional chaining and unnecessary conditions.
+    - `main.tsx`: Replaced non-null assertion with proper null check.
+  - Fixed unused variables and imports.
+  - Added `void` operator to promise-returning functions in event handlers.
+- **Husky & lint-staged Setup:**
+  - Installed Husky v9.1.7 for Git hooks management.
+  - Installed lint-staged v16.2.7 for running linters on staged files.
+  - Created `.husky/pre-commit` hook that runs `npx lint-staged`.
+  - Configured lint-staged in `package.json` to run:
+    - `eslint --fix` on staged TypeScript files
+    - `tsc --noEmit` for type checking
+  - Pre-commit hook now automatically checks code quality before each commit.
+- **Results:**
+  - ✅ Zero `any` types in the entire codebase.
+  - ✅ ESLint passes with 0 errors and only 3 minor warnings (all intentionally downgraded).
+  - ✅ TypeScript compilation passes with no errors.
+  - ✅ Pre-commit hooks ensure code quality is maintained automatically.
+  - ✅ Improved type safety catches potential bugs at compile time.
+  - ✅ Better IDE autocomplete and IntelliSense support.
+- **Files Changed:** 
+  - Updated: `eslint.config.js`, `package.json`, `.husky/pre-commit`
+  - Fixed: `src/App.tsx`, `src/components/Dashboard.tsx`, `src/components/GroupDetail.tsx`, `src/components/AddExpense.tsx`, `src/components/GroupSelector.tsx`, `src/components/ExpenseForm.tsx`, `src/components/MemberManager.tsx`, `src/components/expense-form/AmountInput.tsx`, `src/components/group-detail/EditExpenseModal.tsx`, `src/main.tsx`
+
+#### 📁 Types & Constants Organization
+- **Objective:** Reorganize type definitions and constants into separate domain-specific files following best practices for better maintainability and discoverability.
+- **New Structure:**
+  - **`src/types/`** directory for all TypeScript interfaces and type definitions:
+    - `member.types.ts`: Member interface
+    - `expense.types.ts`: Split, SplitType, Expense, Transaction interfaces
+    - `group.types.ts`: GroupData, GroupMeta interfaces
+    - `index.ts`: Barrel export file for convenient imports
+  - **`src/constants/`** directory for all constant values and enums:
+    - `app.constants.ts`: AppTab enum for navigation tabs
+    - `theme.constants.ts`: Theme enum for theme modes
+    - `index.ts`: Barrel export file for convenient imports
+- **Backward Compatibility:**
+  - Updated `src/types.ts` to re-export all types from new locations
+  - Existing imports continue to work without changes
+  - Gradual migration path available for future refactoring
+- **Benefits:**
+  - **Domain Separation:** Related types are grouped together by domain (member, expense, group)
+  - **Better Discoverability:** Developers can easily find type definitions by domain
+  - **Reduced File Size:** Large monolithic types.ts (73 lines) split into focused files (6-34 lines each)
+  - **Clearer Dependencies:** Import paths now indicate the domain (e.g., `from './types/expense.types'`)
+  - **Scalability:** Easy to add new domains without cluttering a single file
+  - **Barrel Exports:** Convenient `from './types'` or `from './constants'` imports available
+- **Files Created:**
+  - `src/types/member.types.ts`
+  - `src/types/expense.types.ts`
+  - `src/types/group.types.ts`
+  - `src/types/index.ts`
+  - `src/constants/app.constants.ts`
+  - `src/constants/theme.constants.ts`
+  - `src/constants/index.ts`
+- **Files Updated:**
+  - `src/types.ts` (now re-exports from organized structure)
+- **Result:** The codebase now follows best practices for TypeScript project organization with clear separation between types and constants, domain-specific grouping, and convenient barrel exports for imports.

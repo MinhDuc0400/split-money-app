@@ -28,6 +28,7 @@ interface ExpenseFormProps {
         payerId: string;
         splitType: SplitType;
         splits: Split[];
+        date: string;
     }) => void;
     submitLabel?: string;
 }
@@ -36,7 +37,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
     const { members, currency: groupCurrency } = useGroup();
 
     const [description, setDescription] = useState(initialData?.description || '');
-    const [amount, setAmount] = useState(initialData?.amount?.toString() || '');
+    const [amount, setAmount] = useState(initialData?.amount.toString() || '');
     const [currency, setCurrency] = useState(initialData?.currency || groupCurrency);
     const [payerId, setPayerId] = useState(initialData?.payerId || (members[0]?.id || ''));
     const [splitType, setSplitType] = useState<SplitType>(initialData?.splitType || SplitType.EVEN);
@@ -50,7 +51,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
     const [included, setIncluded] = useState<Record<string, boolean>>(() => {
         // If editing an equal-split expense, preselect members present in splits with amount > 0
         if (initialData && initialData.splitType === SplitType.EVEN && Array.isArray(initialData.splits)) {
-            const selected = new Set(initialData.splits.filter(s => (s.amount ?? 0) > 0).map(s => s.memberId));
+            const selected = new Set(initialData.splits.filter(s => s.amount > 0).map(s => s.memberId));
             const obj: Record<string, boolean> = {};
             members.forEach(m => { obj[m.id] = selected.has(m.id); });
             return obj;
@@ -66,13 +67,19 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
         setIncluded(prev => {
             const next: Record<string, boolean> = { ...prev };
             members.forEach(m => {
-                if (next[m.id] === undefined) next[m.id] = true;
+                if (!(m.id in next)) {
+                    next[m.id] = true;
+                }
             });
             // Remove keys for members that no longer exist
+            const validIds = new Set(members.map(m => m.id));
+            const filtered: Record<string, boolean> = {};
             Object.keys(next).forEach(id => {
-                if (!members.find(m => m.id === id)) delete next[id];
+                if (validIds.has(id)) {
+                    filtered[id] = next[id];
+                }
             });
-            return next;
+            return filtered;
         });
     }, [members]);
 
@@ -150,7 +157,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
                 const exact = (totalCents * p) / 100;
                 return { base: Math.floor(exact), frac: exact - Math.floor(exact) };
             });
-            let assigned = rawCents.reduce((a, b) => a + b.base, 0);
+            const assigned = rawCents.reduce((a, b) => a + b.base, 0);
             let rem = totalCents - assigned;
             const order = rawCents
                 .map((r, idx) => ({ idx, frac: r.frac }))
@@ -179,7 +186,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
                 const exact = (totalCents * count) / totalShares;
                 return { base: Math.floor(exact), frac: exact - Math.floor(exact) };
             });
-            let assigned = rawCents.reduce((a, b) => a + b.base, 0);
+            const assigned = rawCents.reduce((a, b) => a + b.base, 0);
             let rem = totalCents - assigned;
             const order = rawCents
                 .map((r, idx) => ({ idx, frac: r.frac }))
@@ -198,7 +205,8 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             currency,
             payerId,
             splitType,
-            splits
+            splits,
+            date: new Date().toISOString()
         });
     };
 
@@ -225,7 +233,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
                 <label className="text-sm font-medium text-muted-foreground">Currency</label>
                 <select
                     value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
+                    onChange={(e) => { setCurrency(e.target.value); }}
                     className="w-full bg-secondary/50 rounded-lg px-4 py-3 text-sm border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                 >
                     {CURRENCIES.map(curr => (

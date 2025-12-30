@@ -37,7 +37,7 @@ export function GroupSelector({ className }: { className?: string }) {
         setEditGroupCurrency(group.currency);
     }
 
-    const handleSaveEdit = (e: React.MouseEvent) => {
+    const handleSaveEdit = (e: React.MouseEvent | React.KeyboardEvent) => {
         e.stopPropagation();
         if (editingGroupId && editGroupName.trim()) {
             updateGroupName(editingGroupId, editGroupName.trim());
@@ -48,7 +48,7 @@ export function GroupSelector({ className }: { className?: string }) {
         }
     }
 
-    const handleCancelEdit = (e: React.MouseEvent) => {
+    const handleCancelEdit = (e: React.MouseEvent | React.KeyboardEvent) => {
         e.stopPropagation();
         setEditingGroupId(null);
     }
@@ -56,7 +56,7 @@ export function GroupSelector({ className }: { className?: string }) {
     return (
         <div className={cn("relative", className)}>
             <button
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => { setIsOpen(!isOpen); }}
                 className="w-full flex items-center justify-between p-3 rounded-xl bg-secondary/50 hover:bg-secondary transition-colors border border-border/50"
             >
                 <div className="flex flex-col items-start overflow-hidden w-full">
@@ -69,7 +69,7 @@ export function GroupSelector({ className }: { className?: string }) {
             <AnimatePresence>
                 {isOpen && (
                     <>
-                        <div className="fixed inset-0 z-40 bg-black/20" onClick={() => setIsOpen(false)} />
+                        <div className="fixed inset-0 z-40 bg-black/20" onClick={() => { setIsOpen(false); }} />
                         <motion.div
                             initial={{ opacity: 0, y: -10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -95,21 +95,21 @@ export function GroupSelector({ className }: { className?: string }) {
                                                 }}
                                             >
                                                 {editingGroupId === group.id ? (
-                                                    <div className="flex-1 flex flex-col gap-2 mr-1" onClick={e => e.stopPropagation()}>
+                                                    <div className="flex-1 flex flex-col gap-2 mr-1" onClick={e => { e.stopPropagation(); }}>
                                                         <input
                                                             value={editGroupName}
-                                                            onChange={e => setEditGroupName(e.target.value)}
+                                                            onChange={e => { setEditGroupName(e.target.value); }}
                                                             className="bg-background border border-primary/50 rounded px-2 py-1 text-sm flex-1 focus:outline-none min-w-0"
                                                             autoFocus
                                                             placeholder="Group Name"
                                                             onKeyDown={e => {
-                                                                if (e.key === 'Enter') handleSaveEdit(e as any);
-                                                                if (e.key === 'Escape') handleCancelEdit(e as any);
+                                                                if (e.key === 'Enter') handleSaveEdit(e);
+                                                                if (e.key === 'Escape') handleCancelEdit(e);
                                                             }}
                                                         />
                                                         <select
                                                             value={editGroupCurrency}
-                                                            onChange={e => setEditGroupCurrency(e.target.value)}
+                                                            onChange={e => { setEditGroupCurrency(e.target.value); }}
                                                             className="bg-background border border-primary/50 rounded px-2 py-1 text-sm focus:outline-none"
                                                         >
                                                             {CURRENCIES.map(curr => (
@@ -135,7 +135,7 @@ export function GroupSelector({ className }: { className?: string }) {
 
                                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <button
-                                                                onClick={(e) => handleStartEdit(e, group)}
+                                                                onClick={(e) => { handleStartEdit(e, group); }}
                                                                 className="p-1 text-muted-foreground hover:text-primary"
                                                             >
                                                                 <Pencil className="w-3 h-3" />
@@ -161,7 +161,7 @@ export function GroupSelector({ className }: { className?: string }) {
                                     </div>
                                     <div className="p-2 border-t border-border bg-secondary/20">
                                         <button
-                                            onClick={() => setIsCreating(true)}
+                                            onClick={() => { setIsCreating(true); }}
                                             className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
                                         >
                                             <Plus className="w-4 h-4" /> New Group
@@ -174,7 +174,7 @@ export function GroupSelector({ className }: { className?: string }) {
                                     <input
                                         autoFocus
                                         value={newGroupName}
-                                        onChange={e => setNewGroupName(e.target.value)}
+                                        onChange={e => { setNewGroupName(e.target.value); }}
                                         placeholder="Group Name"
                                         className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm border focus:border-primary focus:outline-none"
                                     />
@@ -182,7 +182,7 @@ export function GroupSelector({ className }: { className?: string }) {
                                         <label className="text-xs text-muted-foreground mb-1 block">Currency</label>
                                         <select
                                             value={newGroupCurrency}
-                                            onChange={e => setNewGroupCurrency(e.target.value)}
+                                            onChange={e => { setNewGroupCurrency(e.target.value); }}
                                             className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm border focus:border-primary focus:outline-none"
                                         >
                                             {CURRENCIES.map(curr => (
@@ -195,7 +195,7 @@ export function GroupSelector({ className }: { className?: string }) {
                                     <div className="flex gap-2">
                                         <button
                                             type="button"
-                                            onClick={() => setIsCreating(false)}
+                                            onClick={() => { setIsCreating(false); }}
                                             className="flex-1 py-1.5 text-xs font-medium bg-secondary hover:bg-secondary/80 rounded-md"
                                         >
                                             Cancel

@@ -2,15 +2,26 @@ import { X } from 'lucide-react';
 import { useGroup } from '../context/GroupContext';
 import { motion } from 'framer-motion';
 import { ExpenseForm } from './ExpenseForm';
+import type { SplitType, Split } from '../types';
 
 interface AddExpenseProps {
     onClose: () => void;
 }
 
+interface ExpenseFormData {
+    description: string;
+    amount: number;
+    currency: string;
+    payerId: string;
+    splitType: SplitType;
+    splits: Split[];
+    date: string;
+}
+
 export function AddExpense({ onClose }: AddExpenseProps) {
     const { addExpense } = useGroup();
 
-    const handleSubmit = (data: any) => {
+    const handleSubmit = (data: ExpenseFormData) => {
         addExpense({
             ...data,
             date: new Date().toISOString(),

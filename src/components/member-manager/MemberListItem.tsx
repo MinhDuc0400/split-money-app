@@ -1,0 +1,110 @@
+import { useState } from 'react';
+import { Trash2, Pencil, X, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { cn } from '../../lib/utils';
+import { formatAmount } from '../../lib/currency';
+import type { Member } from '../../types';
+
+interface MemberListItemProps {
+    member: Member;
+    balances: Record<string, Record<string, number>>;
+    onUpdateName: (id: string, name: string) => void;
+    onRemove: (id: string, e: React.MouseEvent) => void;
+}
+
+export function MemberListItem({ member, balances, onUpdateName, onRemove }: MemberListItemProps) {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editName, setEditName] = useState(member.name);
+
+    const handleStartEdit = () => {
+        setIsEditing(true);
+        setEditName(member.name);
+    };
+
+    const handleSaveEdit = () => {
+        if (editName.trim()) {
+            onUpdateName(member.id, editName.trim());
+            setIsEditing(false);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setIsEditing(false);
+        setEditName(member.name);
+    };
+
+    // Get all balances for this member across currencies
+    const memberBalances = Object.entries(balances)
+        .map(([curr, currencyBalances]) => ({
+            currency: curr,
+            balance: currencyBalances[member.id] || 0
+        }))
+        .filter(({ balance }) => Math.abs(balance) > 0.01);
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, height: 0 }}
+            className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 group hover:bg-secondary/50 transition-colors"
+        >
+            {isEditing ? (
+                <div className="flex-1 flex gap-2 items-center mr-2">
+                    <input
+                        value={editName}
+                        onChange={e => { setEditName(e.target.value); }}
+                        className="bg-card border border-primary/50 rounded px-2 py-1 text-sm flex-1 focus:outline-none"
+                        autoFocus
+                        onKeyDown={e => {
+                            if (e.key === 'Enter') handleSaveEdit();
+                            if (e.key === 'Escape') handleCancelEdit();
+                        }}
+                    />
+                    <button onClick={handleSaveEdit} className="p-1 text-green-500 hover:bg-green-500/10 rounded">
+                        <Check className="w-4 h-4" />
+                    </button>
+                    <button onClick={handleCancelEdit} className="p-1 text-muted-foreground hover:bg-secondary rounded">
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+            ) : (
+                <>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden">
+                            <img
+                                src={member.avatar}
+                                alt={member.name}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                        <span className="font-medium text-sm">{member.name}</span>
+                        <button
+                            onClick={handleStartEdit}
+                            className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-primary transition-all"
+                        >
+                            <Pencil className="w-3 h-3" />
+                        </button>
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        {/* Show balance hints for all currencies if non-zero */}
+                        <div className="flex flex-col items-end gap-0.5">
+                            {memberBalances.map(({ currency, balance }) => (
+                                <span key={currency} className={cn("text-xs font-medium", balance > 0 ? "text-green-500" : "text-red-500")}>
+                                    {balance > 0 ? '+' : ''}{formatAmount(Math.abs(balance), currency)}
+                                </span>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={(e) => { onRemove(member.id, e); }}
+                            className="text-muted-foreground hover:text-destructive p-2 rounded-full hover:bg-destructive/10 transition-colors"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                </>
+            )}
+        </motion.div>
+    );
+}

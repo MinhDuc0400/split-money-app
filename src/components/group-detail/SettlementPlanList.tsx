@@ -1,0 +1,50 @@
+import { motion } from 'framer-motion';
+import { formatAmount } from '../../lib/currency';
+import type { Transaction } from '../../types';
+
+interface SettlementPlanListProps {
+    settlements: Transaction[];
+    getMemberName: (id: string) => string;
+    getMemberAvatar: (id: string) => string | undefined;
+}
+
+export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar }: SettlementPlanListProps) {
+    return (
+        <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-6">
+            <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
+                <span>Settlement Plan</span>
+                <span className="text-xs font-normal text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">Optimized</span>
+            </h3>
+            <div className="space-y-4">
+                {settlements.length === 0 ? (
+                    <div className="text-center py-12 border-2 border-dashed border-border/50 rounded-xl">
+                        <p className="text-muted-foreground">No debts found. Everyone is settled up!</p>
+                    </div>
+                ) : (
+                    settlements.map((tx, idx) => (
+                        <motion.div
+                            key={`${tx.from}-${tx.to}-${tx.amount}`}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: idx * 0.1 }}
+                            className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary/30 transition-colors"
+                        >
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden">
+                                    <img src={getMemberAvatar(tx.from)} alt="" className="w-full h-full object-cover" />
+                                </div>
+                                <div className="text-sm">
+                                    <div className="font-semibold">{getMemberName(tx.from)}</div>
+                                    <div className="text-muted-foreground text-xs">pays {getMemberName(tx.to)}</div>
+                                </div>
+                            </div>
+                            <div className="text-right">
+                                <div className="font-bold text-lg text-primary">{formatAmount(tx.amount, tx.currency)}</div>
+                            </div>
+                        </motion.div>
+                    ))
+                )}
+            </div>
+        </div>
+    );
+}
