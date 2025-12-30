@@ -3,41 +3,48 @@ import { Plus, Check, ChevronDown, Trash2, Pencil, X } from 'lucide-react';
 import { useGroup } from '../context/GroupContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CURRENCIES, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '../lib/currency';
 
 export function GroupSelector({ className }: { className?: string }) {
-    const { groups, activeGroupId, switchGroup, createGroup, deleteGroup, updateGroupName } = useGroup();
+    const { groups, activeGroupId, switchGroup, createGroup, deleteGroup, updateGroupName, updateGroupCurrency } = useGroup();
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
+    const [newGroupCurrency, setNewGroupCurrency] = useState('USD');
 
     // Rename state
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
     const [editGroupName, setEditGroupName] = useState('');
+    const [editGroupCurrency, setEditGroupCurrency] = useState('');
 
     const activeGroup = groups.find(g => g.id === activeGroupId);
 
     const handleCreate = (e: React.FormEvent) => {
         e.preventDefault();
         if (newGroupName.trim()) {
-            createGroup(newGroupName.trim());
+            createGroup(newGroupName.trim(), newGroupCurrency);
             setNewGroupName('');
+            setNewGroupCurrency('USD');
             setIsCreating(false);
             setIsOpen(false);
         }
     };
 
-    const handleStartEdit = (e: React.MouseEvent, group: { id: string, name: string }) => {
+    const handleStartEdit = (e: React.MouseEvent, group: { id: string, name: string, currency: string }) => {
         e.stopPropagation();
         setEditingGroupId(group.id);
         setEditGroupName(group.name);
+        setEditGroupCurrency(group.currency);
     }
 
     const handleSaveEdit = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (editingGroupId && editGroupName.trim()) {
             updateGroupName(editingGroupId, editGroupName.trim());
+            updateGroupCurrency(editingGroupId, editGroupCurrency);
             setEditingGroupId(null);
             setEditGroupName('');
+            setEditGroupCurrency('');
         }
     }
 
@@ -88,23 +95,37 @@ export function GroupSelector({ className }: { className?: string }) {
                                                 }}
                                             >
                                                 {editingGroupId === group.id ? (
-                                                    <div className="flex-1 flex gap-1 items-center mr-1" onClick={e => e.stopPropagation()}>
+                                                    <div className="flex-1 flex flex-col gap-2 mr-1" onClick={e => e.stopPropagation()}>
                                                         <input
                                                             value={editGroupName}
                                                             onChange={e => setEditGroupName(e.target.value)}
                                                             className="bg-background border border-primary/50 rounded px-2 py-1 text-sm flex-1 focus:outline-none min-w-0"
                                                             autoFocus
+                                                            placeholder="Group Name"
                                                             onKeyDown={e => {
                                                                 if (e.key === 'Enter') handleSaveEdit(e as any);
                                                                 if (e.key === 'Escape') handleCancelEdit(e as any);
                                                             }}
                                                         />
-                                                        <button onClick={handleSaveEdit} className="p-1 text-green-500 hover:bg-green-500/10 rounded">
-                                                            <Check className="w-3 h-3" />
-                                                        </button>
-                                                        <button onClick={handleCancelEdit} className="p-1 text-muted-foreground hover:bg-secondary rounded">
-                                                            <X className="w-3 h-3" />
-                                                        </button>
+                                                        <select
+                                                            value={editGroupCurrency}
+                                                            onChange={e => setEditGroupCurrency(e.target.value)}
+                                                            className="bg-background border border-primary/50 rounded px-2 py-1 text-sm focus:outline-none"
+                                                        >
+                                                            {CURRENCIES.map(curr => (
+                                                                <option key={curr} value={curr}>
+                                                                    {CURRENCY_SYMBOLS[curr]} {curr}
+                                                                </option>
+                                                            ))}
+                                                        </select>
+                                                        <div className="flex gap-1 justify-end">
+                                                            <button onClick={handleSaveEdit} className="p-1 text-green-500 hover:bg-green-500/10 rounded">
+                                                                <Check className="w-3 h-3" />
+                                                            </button>
+                                                            <button onClick={handleCancelEdit} className="p-1 text-muted-foreground hover:bg-secondary rounded">
+                                                                <X className="w-3 h-3" />
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 ) : (
                                                     <>
@@ -157,6 +178,20 @@ export function GroupSelector({ className }: { className?: string }) {
                                         placeholder="Group Name"
                                         className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm border focus:border-primary focus:outline-none"
                                     />
+                                    <div>
+                                        <label className="text-xs text-muted-foreground mb-1 block">Currency</label>
+                                        <select
+                                            value={newGroupCurrency}
+                                            onChange={e => setNewGroupCurrency(e.target.value)}
+                                            className="w-full bg-secondary/50 rounded-lg px-3 py-2 text-sm border focus:border-primary focus:outline-none"
+                                        >
+                                            {CURRENCIES.map(curr => (
+                                                <option key={curr} value={curr}>
+                                                    {CURRENCY_SYMBOLS[curr]} {curr} - {CURRENCY_NAMES[curr]}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
                                     <div className="flex gap-2">
                                         <button
                                             type="button"

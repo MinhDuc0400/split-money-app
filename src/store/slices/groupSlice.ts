@@ -22,10 +22,15 @@ const groupSlice = createSlice({
                 state.activeId = action.payload.id;
             }
         },
-        updateGroup: (state, action: PayloadAction<{ id: string; name: string }>) => {
+        updateGroup: (state, action: PayloadAction<{ id: string; name?: string; currency?: string }>) => {
             const group = state.items.find((g) => g.id === action.payload.id);
             if (group) {
-                group.name = action.payload.name;
+                if (action.payload.name !== undefined) {
+                    group.name = action.payload.name;
+                }
+                if (action.payload.currency !== undefined) {
+                    group.currency = action.payload.currency;
+                }
             }
         },
         deleteGroup: (state, action: PayloadAction<string>) => {

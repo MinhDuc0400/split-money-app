@@ -23,6 +23,7 @@ export interface Expense {
     id: string;
     description: string;
     amount: number;
+    currency: string; // Currency code (USD, VND, EUR, etc.)
     payerId: string; // The person who paid
     date: string; // ISO date string
     splitType: SplitType;
@@ -34,6 +35,7 @@ export interface Transaction {
     from: string;
     to: string;
     amount: number;
+    currency: string; // Currency code for this transaction
 }
 
 // Legacy type, keeping for reference but moving to GroupMeta structure

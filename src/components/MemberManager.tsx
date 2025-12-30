@@ -3,9 +3,10 @@ import { UserPlus, Trash2, AlertTriangle, Pencil, X, Check } from 'lucide-react'
 import { useGroup } from '../context/GroupContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
+import { formatAmount } from '../lib/currency';
 
 export function MemberManager() {
-    const { members, balances, addMember, updateMemberName, removeMember, removeMemberAndRedistribute, resetGroup } = useGroup();
+    const { members, balances, addMember, updateMemberName, removeMember, removeMemberAndRedistribute, resetGroup, currency } = useGroup();
     const [newName, setNewName] = useState('');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editName, setEditName] = useState('');
@@ -35,10 +36,15 @@ export function MemberManager() {
 
     const handleRemoveClick = (id: string, e: React.MouseEvent) => {
         e.stopPropagation(); // Prevents triggering edit if we made row clickable (optional)
-        const balance = balances[id] || 0;
+        
+        // Check if member has any non-zero balance in any currency
+        const hasBalance = Object.values(balances).some(currencyBalances => {
+            const balance = currencyBalances[id] || 0;
+            return Math.abs(balance) > 0.01;
+        });
 
-        // If balance is effectively zero, just remove
-        if (Math.abs(balance) < 0.01) {
+        // If balance is effectively zero in all currencies, just remove
+        if (!hasBalance) {
             removeMember(id);
         } else {
             // Trigger smart removal dialog
@@ -63,7 +69,11 @@ export function MemberManager() {
     };
 
     const candidateName = members.find(m => m.id === removeCandidate)?.name;
-    const candidateBalance = removeCandidate ? balances[removeCandidate] || 0 : 0;
+    const candidateBalances = removeCandidate 
+        ? Object.entries(balances)
+            .map(([curr, currencyBalances]) => ({ currency: curr, balance: currencyBalances[removeCandidate] || 0 }))
+            .filter(({ balance }) => Math.abs(balance) > 0.01)
+        : [];
 
     return (
         <div className="space-y-6">
@@ -143,12 +153,18 @@ export function MemberManager() {
                                 )}
 
                                 <div className="flex items-center gap-4">
-                                    {/* Show balance hint if non-zero */}
-                                    {Math.abs(balances[member.id] || 0) > 0.01 && (
-                                        <span className={cn("text-xs font-medium", balances[member.id] > 0 ? "text-green-500" : "text-red-500")}>
-                                            {balances[member.id] > 0 ? '+' : ''}{balances[member.id].toFixed(2)}
-                                        </span>
-                                    )}
+                                    {/* Show balance hints for all currencies if non-zero */}
+                                    <div className="flex flex-col items-end gap-0.5">
+                                        {Object.entries(balances).map(([curr, currencyBalances]) => {
+                                            const balance = currencyBalances[member.id] || 0;
+                                            if (Math.abs(balance) < 0.01) return null;
+                                            return (
+                                                <span key={curr} className={cn("text-xs font-medium", balance > 0 ? "text-green-500" : "text-red-500")}>
+                                                    {balance > 0 ? '+' : ''}{formatAmount(Math.abs(balance), curr)}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
 
                                     <button
                                         onClick={(e) => handleRemoveClick(member.id, e)}
@@ -178,9 +194,16 @@ export function MemberManager() {
                                 <AlertTriangle className="w-5 h-5 text-yellow-500" />
                                 Unsettled Balance
                             </h3>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                <span className="font-bold text-foreground">{candidateName}</span> has an unsettled balance of <span className={cn("font-bold", candidateBalance > 0 ? "text-green-500" : "text-red-500")}>{candidateBalance > 0 ? '+' : ''}{candidateBalance.toFixed(2)}</span>.
+                            <p className="text-sm text-muted-foreground mb-2">
+                                <span className="font-bold text-foreground">{candidateName}</span> has unsettled balances:
                             </p>
+                            <div className="mb-4 space-y-1">
+                                {candidateBalances.map(({ currency: curr, balance }) => (
+                                    <div key={curr} className={cn("text-sm font-bold", balance > 0 ? "text-green-500" : "text-red-500")}>
+                                        {balance > 0 ? '+' : ''}{formatAmount(Math.abs(balance), curr)}
+                                    </div>
+                                ))}
+                            </div>
                             <p className="text-xs text-muted-foreground mb-6 bg-secondary/50 p-3 rounded-lg">
                                 Removing them now will leave the group's math incorrect unless you redistribute their expenses.
                             </p>

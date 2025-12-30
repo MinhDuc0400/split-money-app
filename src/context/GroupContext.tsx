@@ -16,6 +16,7 @@ interface GroupContextType {
     // Current Group Data
     activeGroupId: string;
     groupName: string;
+    currency: string;
     members: Member[];
     expenses: Expense[];
 
@@ -27,14 +28,15 @@ interface GroupContextType {
     addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
     updateExpense: (id: string, expenseData: Omit<Expense, 'id' | 'createdAt'>) => void;
     deleteExpense: (id: string) => void;
-    balances: Record<string, number>;
+    balances: Record<string, Record<string, number>>; // currency -> memberId -> balance
     settlements: Transaction[];
     resetGroup: () => void; // Deprecated or re-implement
 
     // Multi-Group Management
     groups: GroupMeta[];
-    createGroup: (name: string) => void;
+    createGroup: (name: string, currency: string) => void;
     updateGroupName: (id: string, name: string) => void;
+    updateGroupCurrency: (id: string, currency: string) => void;
     switchGroup: (id: string) => void;
     deleteGroup: (id: string) => void;
 }
@@ -57,6 +59,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
 
     const activeGroup = groups.find(g => g.id === activeGroupId);
     const groupName = activeGroup?.name || 'Loading...';
+    const currency = activeGroup?.currency || 'USD';
 
     // --- Migration/Initialization Logic ---
     useEffect(() => {
@@ -129,11 +132,11 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     };
 
     // --- Group Management ---
-    const handleCreateGroup = (name: string) => {
+    const handleCreateGroup = (name: string, currency: string) => {
         const newGroup: GroupMeta = {
             id: crypto.randomUUID(),
             name,
-            currency: 'USD',
+            currency,
             createdAt: Date.now()
         };
         dispatch(addGroup(newGroup));
@@ -141,6 +144,10 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
 
     const handleUpdateGroupName = (id: string, name: string) => {
         dispatch(updateGroup({ id, name }));
+    };
+
+    const handleUpdateGroupCurrency = (id: string, currency: string) => {
+        dispatch(updateGroup({ id, currency }));
     };
 
     const handleSwitchGroup = (id: string) => {
@@ -161,6 +168,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
             value={{
                 activeGroupId,
                 groupName,
+                currency,
                 members,
                 expenses,
                 addMember: handleAddMember,
@@ -176,6 +184,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 groups,
                 createGroup: handleCreateGroup,
                 updateGroupName: handleUpdateGroupName,
+                updateGroupCurrency: handleUpdateGroupCurrency,
                 switchGroup: handleSwitchGroup,
                 deleteGroup: handleDeleteGroup
             }}

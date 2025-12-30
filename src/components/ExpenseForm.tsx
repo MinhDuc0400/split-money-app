@@ -9,11 +9,13 @@ import { SplitExact } from './expense-form/SplitExact';
 import { SplitPercentage } from './expense-form/SplitPercentage';
 import { SplitShares } from './expense-form/SplitShares';
 import { SubmitButton } from './expense-form/SubmitButton';
+import { removeThousandsSeparator, CURRENCIES, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '../lib/currency';
 
 interface ExpenseFormProps {
     initialData?: {
         description: string;
         amount: number;
+        currency: string;
         payerId: string;
         splitType: SplitType;
         splits: Split[];
@@ -22,6 +24,7 @@ interface ExpenseFormProps {
     onSubmit: (data: {
         description: string;
         amount: number;
+        currency: string;
         payerId: string;
         splitType: SplitType;
         splits: Split[];
@@ -30,10 +33,11 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense' }: ExpenseFormProps) {
-    const { members } = useGroup();
+    const { members, currency: groupCurrency } = useGroup();
 
     const [description, setDescription] = useState(initialData?.description || '');
     const [amount, setAmount] = useState(initialData?.amount?.toString() || '');
+    const [currency, setCurrency] = useState(initialData?.currency || groupCurrency);
     const [payerId, setPayerId] = useState(initialData?.payerId || (members[0]?.id || ''));
     const [splitType, setSplitType] = useState<SplitType>(initialData?.splitType || SplitType.EVEN);
     // Exact amounts: Record<MemberID, AmountString>
@@ -81,7 +85,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
 
     // Equal split preview value computed at top-level to avoid conditional hook usage
     const equalEach = useMemo(() => {
-        const total = parseFloat(amount || '0');
+        const total = parseFloat(removeThousandsSeparator(amount || '0'));
         const n = members.reduce((count, m) => count + (included[m.id] ? 1 : 0), 0);
         if (!isFinite(total) || n === 0) return '0.00';
         return (total / n).toFixed(2);
@@ -90,7 +94,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        const totalAmount = parseFloat(amount);
+        const totalAmount = parseFloat(removeThousandsSeparator(amount));
         if (!description || isNaN(totalAmount) || totalAmount <= 0) {
             alert('Please enter a valid description and amount.');
             return;
@@ -120,7 +124,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             }));
         } else if (splitType === SplitType.EXACT) {
             // Exact amounts must sum exactly to total
-            const centsList = members.map(m => Math.round(parseFloat(manualAmounts[m.id] || '0') * 100) || 0);
+            const centsList = members.map(m => Math.round(parseFloat(removeThousandsSeparator(manualAmounts[m.id] || '0')) * 100) || 0);
             const sum = centsList.reduce((a, b) => a + b, 0);
             if (sum !== totalCents) {
                 alert(`Exact amounts must sum to ${totalAmount.toFixed(2)}. Currently ${(sum/100).toFixed(2)}.`);
@@ -133,7 +137,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             }));
         } else if (splitType === SplitType.PERCENTAGE) {
             // Percentages must sum exactly to 100.00
-            const perc = members.map(m => parseFloat(percentages[m.id] || '0'));
+            const perc = members.map(m => parseFloat(removeThousandsSeparator(percentages[m.id] || '0')));
             const percSum = perc.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
             // Enforce exact 100 up to two decimals
             if (Math.round(percSum * 100) !== 10000) {
@@ -191,6 +195,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
         onSubmit({
             description,
             amount: totalAmount,
+            currency,
             payerId,
             splitType,
             splits
@@ -212,8 +217,24 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
                 setAmount={setAmount}
                 description={description}
                 setDescription={setDescription}
+                currency={currency}
                 autoFocus={!initialData}
             />
+
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Currency</label>
+                <select
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    className="w-full bg-secondary/50 rounded-lg px-4 py-3 text-sm border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                >
+                    {CURRENCIES.map(curr => (
+                        <option key={curr} value={curr}>
+                            {CURRENCY_SYMBOLS[curr]} {curr} - {CURRENCY_NAMES[curr]}
+                        </option>
+                    ))}
+                </select>
+            </div>
 
             <PayerSelector 
                 members={members}
@@ -241,6 +262,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
                     manualAmounts={manualAmounts}
                     setManualAmounts={setManualAmounts}
                     amount={amount}
+                    currency={currency}
                 />
             )}
 

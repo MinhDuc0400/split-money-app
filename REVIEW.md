@@ -2,7 +2,7 @@
 
 This document provides a comprehensive review of the features, functionality, and potential improvements for the SplitMoney application.
 
-Last updated: 2025-12-27 22:55
+Last updated: 2025-12-30 10:25
 
 ---
 
@@ -158,3 +158,68 @@ The SplitMoney app is a robust and well-architected foundation for expense manag
   - Refactored `ExpenseForm`: The main component now acts as a container that manages state and composes these smaller components.
 - **Benefits:** Reduced the main file size to ~278 lines, improved code organization, and made individual components easier to test and modify.
 - **Type Safety:** Ensured all new components are fully typed and fixed `verbatimModuleSyntax` issues.
+
+#### 💱 Multi-Currency Support System
+- **Objective:** Enable the app to handle expenses in multiple currencies, allowing groups to track spending across different currencies without manual conversion.
+- **Supported Currencies:** USD, VND, EUR, GBP, JPY, THB with proper currency symbols and full names.
+- **Key Features:**
+  - **Group-Level Currency:** Each group has a default currency set during creation or editing via the GroupSelector component.
+  - **Per-Expense Currency:** When adding or editing an expense, users can select the currency for that specific expense, independent of the group's default currency.
+  - **Multi-Currency Balances:** The accounting system (`src/lib/accounting.ts`) now calculates balances separately for each currency, returning `Record<string, Record<string, number>>` (currency → memberId → balance).
+  - **Multi-Currency Settlements:** Settlement transactions are grouped by currency, ensuring debts are settled in the same currency they were incurred.
+  - **Dashboard Display:** The Dashboard shows total spent amounts grouped by currency, and displays "You Are Owed" and "You Owe" amounts for each currency separately.
+  - **Member Balances:** Member cards display balance information for all currencies where the member has a non-zero balance.
+- **Implementation Details:**
+  - Added `currency` field to `Expense` and `Transaction` types.
+  - Created `src/lib/currency.ts` with currency constants, symbols, names, and formatting utilities.
+  - Updated `GroupMeta` to include a `currency` field.
+  - Modified `GroupSelector` to allow currency selection when creating or editing groups.
+  - Enhanced `ExpenseForm` with a currency dropdown that defaults to the group's currency but can be changed per expense.
+  - Updated all display components to show currency symbols using `formatAmount(amount, currency)`.
+- **Files Changed:** `src/types.ts`, `src/lib/accounting.ts`, `src/lib/currency.ts`, `src/components/GroupSelector.tsx`, `src/components/ExpenseForm.tsx`, `src/components/Dashboard.tsx`, `src/components/MemberManager.tsx`, `src/context/GroupContext.tsx`, `src/store/slices/groupSlice.ts`.
+- **Result:** Users can now manage expenses in multiple currencies within the same group, with accurate per-currency balance tracking and settlement calculations.
+
+#### 🔢 Price Input Masking with Thousands Separators
+- **Objective:** Improve the user experience when entering large amounts by automatically formatting numbers with thousands separators (e.g., 1,000,000) as the user types.
+- **Implementation:**
+  - Created formatting utilities in `src/lib/currency.ts`:
+    - `formatCurrencyInput(value: string)`: Adds thousands separators while preserving decimal input.
+    - `removeThousandsSeparator(value: string)`: Strips separators for numerical calculations.
+  - Applied masking to:
+    - Main expense amount input in `AmountInput` component.
+    - Individual split amount inputs in "Exact amounts" mode (`SplitExact` component).
+  - The app stores and calculates with raw numbers internally, only formatting for display.
+- **User Experience:**
+  - As users type, commas are automatically inserted (e.g., typing "1000000" displays as "1,000,000").
+  - Decimal points are preserved (e.g., "1,234.56").
+  - All calculations remain accurate by removing separators before parsing.
+- **Files Changed:** `src/lib/currency.ts`, `src/components/expense-form/AmountInput.tsx`, `src/components/expense-form/SplitExact.tsx`, `src/components/ExpenseForm.tsx`.
+- **Result:** Large amounts are easier to read and verify, reducing input errors and improving overall usability.
+
+#### 🏠 Dashboard & Group Detail Flow Refactoring
+- **Objective:** Restructure the application flow to provide a cleaner separation between high-level group summaries and detailed group information.
+- **Changes:**
+  - **Dashboard (Home Page):**
+    - Now shows only a quick summary of the active group:
+      - Total spent by currency across all expenses.
+      - "You Are Owed" amounts aggregated by currency (sum of all positive balances).
+      - "You Owe" amounts aggregated by currency (sum of all negative balances).
+      - Group member count and expense count.
+      - Member avatar preview (first 5 members).
+      - "View Details" button to navigate to the full group detail page.
+    - Removed detailed member balances and settlement plan from the Dashboard.
+  - **New GroupDetail Page (`/group` route):**
+    - Created a dedicated page for detailed group information with two main sections:
+      - **Members Section:** Displays all members with their individual balances per currency, showing who owes what and who is owed what.
+      - **Payments Section:** Shows the optimized settlement plan (who should pay whom and how much) grouped by currency.
+    - Includes expense history with edit/delete functionality.
+  - **Navigation:**
+    - Dashboard has a prominent "View Details" button that navigates to `/group`.
+    - Users can return to the Dashboard via the sidebar/bottom navigation.
+- **Implementation Details:**
+  - Created `src/components/GroupDetail.tsx` with `MemberBalances` and `SettlementPlan` sub-components.
+  - Updated `src/App.tsx` routing to include the `/group` route.
+  - Modified `src/components/Dashboard.tsx` to show only summary information.
+  - Maintained all existing functionality; only reorganized the UI flow.
+- **Files Changed:** `src/components/Dashboard.tsx`, `src/components/GroupDetail.tsx` (new), `src/App.tsx`.
+- **Result:** The Dashboard provides a clean, at-a-glance summary of the group's financial status, while the GroupDetail page offers comprehensive information for users who need to see member-by-member breakdowns and settlement instructions.

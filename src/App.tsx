@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { GroupProvider } from './context/GroupContext';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
+import { GroupDetail } from './components/GroupDetail';
 import { MemberManager } from './components/MemberManager';
 import { AddExpense } from './components/AddExpense';
 import { AppTab } from './types';
@@ -35,6 +36,7 @@ function AppInner() {
         >
             <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/group" element={<GroupDetail />} />
                 <Route path="/members" element={<MemberManager />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

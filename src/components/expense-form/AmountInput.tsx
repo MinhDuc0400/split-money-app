@@ -1,24 +1,34 @@
-import { DollarSign } from 'lucide-react';
+import { getCurrencySymbol, formatCurrencyInput, removeThousandsSeparator } from '../../lib/currency';
 
 interface AmountInputProps {
     amount: string;
     setAmount: (value: string) => void;
     description: string;
     setDescription: (value: string) => void;
+    currency: string;
     autoFocus?: boolean;
 }
 
-export function AmountInput({ amount, setAmount, description, setDescription, autoFocus }: AmountInputProps) {
+export function AmountInput({ amount, setAmount, description, setDescription, currency, autoFocus }: AmountInputProps) {
+    const currencySymbol = getCurrencySymbol(currency);
+
+    const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value;
+        // Format the input with thousands separators
+        const formatted = formatCurrencyInput(rawValue);
+        setAmount(formatted);
+    };
+
     return (
         <div className="space-y-4">
             <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-                    <DollarSign className="w-5 h-5" />
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground text-2xl">
+                    {currencySymbol}
                 </span>
                 <input
-                    type="number"
+                    type="text"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={handleAmountChange}
                     placeholder="0.00"
                     className="w-full bg-secondary/30 text-3xl font-bold text-center py-4 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/50"
                     autoFocus={autoFocus}
