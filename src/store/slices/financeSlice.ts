@@ -93,7 +93,9 @@ const financeSlice = createSlice({
         // --- Group Clean Up ---
         deleteGroupData: (state, action: PayloadAction<string>) => {
             const groupId = action.payload;
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
             delete state.members[groupId];
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
             delete state.expenses[groupId];
         }
     },

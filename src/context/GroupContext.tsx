@@ -194,6 +194,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useGroup() {
     const context = useContext(GroupContext);
     if (context === undefined) {

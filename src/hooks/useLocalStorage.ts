@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
     // Get from local storage then parse it
@@ -34,9 +34,11 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     };
 
     // Re-read value when key changes
-    useEffect(() => {
+    const [prevKey, setPrevKey] = useState(key);
+    if (key !== prevKey) {
+        setPrevKey(key);
         setStoredValue(readValue());
-    }, [key]);
+    }
 
     return [storedValue, setValue] as const;
 }

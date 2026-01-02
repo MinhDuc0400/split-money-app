@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useGroup } from '../context/GroupContext';
+import { calculateSplits } from '../lib/accounting';
 import { SplitType, type Split } from '../types';
 import { AmountInput } from './expense-form/AmountInput';
 import { PayerSelector } from './expense-form/PayerSelector';
@@ -63,7 +64,9 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
     });
 
     // Keep included map in sync when members list changes (new members default to included)
-    useEffect(() => {
+    const [prevMembers, setPrevMembers] = useState(members);
+    if (members !== prevMembers) {
+        setPrevMembers(members);
         setIncluded(prev => {
             const next: Record<string, boolean> = { ...prev };
             members.forEach(m => {
@@ -81,14 +84,11 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             });
             return filtered;
         });
-    }, [members]);
+    }
 
     // Ensure payerId is valid if members change
-    useEffect(() => {
-        if (members.length > 0 && !members.find(m => m.id === payerId)) {
-            setPayerId(members[0].id);
-        }
-    }, [members, payerId]);
+    // Using derived state instead of useEffect to avoid cascading renders
+    const validPayerId = members.find(m => m.id === payerId) ? payerId : (members[0]?.id || '');
 
     // Equal split preview value computed at top-level to avoid conditional hook usage
     const equalEach = useMemo(() => {
@@ -107,103 +107,63 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             return;
         }
 
-        const totalCents = Math.round(totalAmount * 100);
-        let splits: Split[] = [];
-
         if (members.length === 0) {
             alert('Please add members first.');
             return;
         }
 
+        // Prepare data for calculation
+        const options: {
+            includedMemberIds?: string[];
+            manualAmounts?: Record<string, number>;
+            percentages?: Record<string, number>;
+            shares?: Record<string, number>;
+        } = {};
+
         if (splitType === SplitType.EVEN) {
-            const participants = members.filter(m => included[m.id]);
-            const n = participants.length;
-            if (n === 0) {
-                alert('Please select at least one participant for this expense.');
-                return;
-            }
-            const base = Math.floor(totalCents / n);
-            const remainder = totalCents % n;
-            splits = participants.map((m, idx) => ({
-                memberId: m.id,
-                amount: (base + (idx < remainder ? 1 : 0)) / 100,
-                paid: false
-            }));
+            options.includedMemberIds = members.filter(m => included[m.id]).map(m => m.id);
         } else if (splitType === SplitType.EXACT) {
-            // Exact amounts must sum exactly to total
-            const centsList = members.map(m => Math.round(parseFloat(removeThousandsSeparator(manualAmounts[m.id] || '0')) * 100) || 0);
-            const sum = centsList.reduce((a, b) => a + b, 0);
-            if (sum !== totalCents) {
-                alert(`Exact amounts must sum to ${totalAmount.toFixed(2)}. Currently ${(sum/100).toFixed(2)}.`);
-                return;
-            }
-            splits = members.map((m, idx) => ({
-                memberId: m.id,
-                amount: centsList[idx] / 100,
-                paid: false
-            }));
-        } else if (splitType === SplitType.PERCENTAGE) {
-            // Percentages must sum exactly to 100.00
-            const perc = members.map(m => parseFloat(removeThousandsSeparator(percentages[m.id] || '0')));
-            const percSum = perc.reduce((a, b) => a + (isNaN(b) ? 0 : b), 0);
-            // Enforce exact 100 up to two decimals
-            if (Math.round(percSum * 100) !== 10000) {
-                alert(`Percentages must sum to 100.00%. Currently ${percSum.toFixed(2)}%.`);
-                return;
-            }
-            // Compute amounts with remainder distribution by largest fractional part
-            const rawCents = members.map((_, idx) => {
-                const p = isNaN(perc[idx]) ? 0 : perc[idx];
-                const exact = (totalCents * p) / 100;
-                return { base: Math.floor(exact), frac: exact - Math.floor(exact) };
+            options.manualAmounts = {};
+            members.forEach(m => {
+                const val = parseFloat(removeThousandsSeparator(manualAmounts[m.id] || '0'));
+                options.manualAmounts[m.id] = isNaN(val) ? 0 : val;
             });
-            const assigned = rawCents.reduce((a, b) => a + b.base, 0);
-            let rem = totalCents - assigned;
-            const order = rawCents
-                .map((r, idx) => ({ idx, frac: r.frac }))
-                .sort((a, b) => b.frac - a.frac);
-            const centsResult = rawCents.map(r => r.base);
-            for (let i = 0; i < order.length && rem > 0; i++) {
-                centsResult[order[i].idx] += 1;
-                rem--;
-            }
-            splits = members.map((m, idx) => ({ memberId: m.id, amount: centsResult[idx] / 100, paid: false }));
+        } else if (splitType === SplitType.PERCENTAGE) {
+            options.percentages = {};
+            members.forEach(m => {
+                const val = parseFloat(removeThousandsSeparator(percentages[m.id] || '0'));
+                options.percentages[m.id] = isNaN(val) ? 0 : val;
+            });
         } else if (splitType === SplitType.SHARES) {
-            // Shares must be integers and totalShares > 0
+            // Strict integer validation for UI
             const sharesList = members.map(m => (shares[m.id] || '').trim());
             const invalid = sharesList.some(s => s !== '' && !/^\d+$/.test(s));
             if (invalid) {
                 alert('Shares must be integers (0 or more).');
                 return;
             }
-            const ints = sharesList.map(s => (s === '' ? 0 : parseInt(s, 10)));
-            const totalShares = ints.reduce((a, b) => a + b, 0);
-            if (totalShares <= 0) {
-                alert('Total shares must be greater than 0.');
-                return;
-            }
-            const rawCents = ints.map(count => {
-                const exact = (totalCents * count) / totalShares;
-                return { base: Math.floor(exact), frac: exact - Math.floor(exact) };
+            
+            options.shares = {};
+            members.forEach(m => {
+                const val = (shares[m.id] || '').trim();
+                options.shares[m.id] = val === '' ? 0 : parseInt(val, 10);
             });
-            const assigned = rawCents.reduce((a, b) => a + b.base, 0);
-            let rem = totalCents - assigned;
-            const order = rawCents
-                .map((r, idx) => ({ idx, frac: r.frac }))
-                .sort((a, b) => b.frac - a.frac);
-            const centsResult = rawCents.map(r => r.base);
-            for (let i = 0; i < order.length && rem > 0; i++) {
-                centsResult[order[i].idx] += 1;
-                rem--;
-            }
-            splits = members.map((m, idx) => ({ memberId: m.id, amount: centsResult[idx] / 100, paid: false }));
         }
+
+        const result = calculateSplits(totalAmount, splitType, members, options);
+
+        if (!result.success) {
+            alert(result.error);
+            return;
+        }
+
+        const splits = result.splits;
 
         onSubmit({
             description,
             amount: totalAmount,
             currency,
-            payerId,
+            payerId: validPayerId,
             splitType,
             splits,
             date: new Date().toISOString()
@@ -246,7 +206,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
 
             <PayerSelector 
                 members={members}
-                payerId={payerId}
+                payerId={validPayerId}
                 setPayerId={setPayerId}
             />
 
