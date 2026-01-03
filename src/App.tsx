@@ -7,7 +7,11 @@ import { Dashboard } from './components/Dashboard';
 import { GroupDetail } from './components/GroupDetail';
 import { MemberManager } from './components/MemberManager';
 import { AddExpense } from './components/AddExpense';
+import { Login } from './components/auth/Login';
+import { AuthCallback } from './components/auth/AuthCallback';
 import { AppTab } from './types';
+import { useSelector } from 'react-redux';
+import type { RootState } from './store';
 
 // Redux
 import { Provider } from 'react-redux';
@@ -18,6 +22,7 @@ function AppInner() {
     const location = useLocation();
     const navigate = useNavigate();
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+    const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
     const activeTab = useMemo(() => {
         return location.pathname.startsWith('/members') ? AppTab.MEMBERS : AppTab.DASHBOARD;
@@ -32,6 +37,16 @@ function AppInner() {
         }
     };
 
+    const isAuthPage = location.pathname === '/login' || location.pathname === '/auth/callback';
+
+    if (!isAuthenticated && !isAuthPage) {
+        return <Navigate to="/login" replace state={{ from: location }} />;
+    }
+
+    if (isAuthenticated && isAuthPage) {
+        return <Navigate to="/" replace />;
+    }
+
     return (
         <Layout
             activeTab={activeTab}
@@ -44,6 +59,8 @@ function AppInner() {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/group" element={<GroupDetail />} />
                 <Route path="/members" element={<MemberManager />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
             {isAddExpenseOpen && (

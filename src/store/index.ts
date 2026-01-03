@@ -3,10 +3,12 @@ import { persistStore, persistReducer, FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, 
 import storage from 'redux-persist/lib/storage'; // defaults to localStorage
 import groupReducer from './slices/groupSlice';
 import financeReducer from './slices/financeSlice';
+import authReducer from './slices/authSlice';
 
 const rootReducer = combineReducers({
     groups: groupReducer,
     finance: financeReducer,
+    auth: authReducer,
 });
 
 const persistConfig = {

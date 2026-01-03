@@ -352,3 +352,26 @@ The SplitMoney app is a robust and well-architected foundation for expense manag
 - **Files Updated:**
   - `src/types.ts` (now re-exports from organized structure)
 - **Result:** The codebase now follows best practices for TypeScript project organization with clear separation between types and constants, domain-specific grouping, and convenient barrel exports for imports.
+
+#### 🔐 Google OAuth2 & JWT Authentication Flow
+- **Objective:** Secure the application by implementing a complete authentication flow using Google OAuth2 and JWT tokens, transitioning from a purely local storage-based app to a user-centric one.
+- **Backend Changes (NestJS):**
+  - Implemented `GoogleStrategy` using Passport to handle OAuth2 handshake.
+  - Created `AuthService` to validate Google users, link accounts, and generate JWT tokens.
+  - Enhanced JWT payload to include user metadata (`name`, `picture`) for immediate frontend availability.
+  - Configured `AuthController` to redirect successful logins back to the frontend with the token as a query parameter.
+  - Added environment variable support (`FRONTEND_URL`) for flexible deployment.
+- **Frontend Changes (React):**
+  - **Route Protection:** Implemented a navigation guard in `App.tsx` that redirects unauthenticated users to `/login` and authenticated users away from `/login`.
+  - **Login Page:** Created a dedicated login view with a "Continue with Google" button.
+  - **Auth Callback:** Implemented `/auth/callback` to capture the JWT token from the URL, decode it, and initialize the application state.
+  - **State Management:** Added `authSlice` to Redux for managing user identity, tokens, and authentication status.
+  - **Persistence:** Synchronized auth state with both `redux-persist` and manual `localStorage` for robust session management.
+  - **User Profile:** Integrated user profile pictures and names into the Layout sidebar/header.
+- **Flow Overview:**
+  1. Frontend `/login` → Backend `/auth/google`.
+  2. Google Auth → Backend `/auth/google/callback`.
+  3. Backend redirects to Frontend `/auth/callback?token=...`.
+  4. Frontend saves token, decodes user, and redirects to `/`.
+- **Files Changed:** `money-split-backend/src/auth/*`, `money-split-app/src/App.tsx`, `money-split-app/src/store/slices/authSlice.ts`, `money-split-app/src/components/auth/*`, `money-split-app/src/components/Layout.tsx`.
+- **Result:** The application now has a secure, production-ready authentication system that allows users to sign in with their Google accounts and maintains their session securely across reloads.

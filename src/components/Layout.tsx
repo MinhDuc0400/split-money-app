@@ -1,9 +1,13 @@
 import React from 'react';
-import { LayoutDashboard, Users, PlusCircle } from 'lucide-react';
+import { LayoutDashboard, Users, PlusCircle, LogIn, LogOut } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { GroupSelector } from './GroupSelector';
 import { AppTab } from '../types';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from '../store';
+import { logout } from '../store/slices/authSlice';
+import { useNavigate } from 'react-router-dom';
 
 interface NavItemProps {
     icon: React.ElementType;
@@ -35,6 +39,15 @@ interface LayoutProps {
 }
 
 export function Layout({ children, activeTab, onTabChange, onAddExpense }: LayoutProps) {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+
+    const handleLogout = () => {
+        dispatch(logout());
+        void navigate('/login');
+    };
+
     return (
         <div className="min-h-screen bg-background flex flex-col md:flex-row shadow-2xl overflow-hidden transition-colors duration-300">
             {/* Header / Sidebar for Desktop */}
@@ -43,9 +56,32 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
                     <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                         SplitMoney
                     </h1>
-                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                        <span className="text-sm font-bold text-primary">D</span>
-                    </div>
+                    {isAuthenticated && user ? (
+                        <div className="relative group">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center border-2 border-primary/20 group-hover:border-primary transition-colors">
+                                {user.picture ? (
+                                    <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="text-sm font-bold text-primary">{user.name.charAt(0)}</span>
+                                )}
+                            </div>
+                            <button
+                                onClick={handleLogout}
+                                className="absolute -right-2 -bottom-2 bg-destructive text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                title="Logout"
+                            >
+                                <LogOut className="w-3.5 h-3.5" />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => void navigate('/login')}
+                            className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center hover:bg-secondary/80 transition-colors"
+                            title="Login"
+                        >
+                            <LogIn className="w-5 h-5" />
+                        </button>
+                    )}
                 </div>
 
                 <div className="mb-6">
@@ -94,6 +130,25 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
 
                     <div className="flex items-center gap-2">
                         <ThemeToggle />
+                        {isAuthenticated && user ? (
+                            <div
+                                onClick={handleLogout}
+                                className="w-8 h-8 rounded-full bg-primary/10 overflow-hidden flex items-center justify-center border border-primary/20 active:scale-95 transition-transform"
+                            >
+                                {user.picture ? (
+                                    <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <span className="text-xs font-bold text-primary">{user.name.charAt(0)}</span>
+                                )}
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => void navigate('/login')}
+                                className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center active:scale-95 transition-transform"
+                            >
+                                <LogIn className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
                 </header>
 
