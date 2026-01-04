@@ -1,9 +1,10 @@
 import React from 'react';
 import { LogIn } from 'lucide-react';
+import { API_ENDPOINTS } from '../../constants';
 
 export const Login: React.FC = () => {
     const handleGoogleLogin = () => {
-        window.location.href = 'http://localhost:3000/auth/google';
+        window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
     };
 
     return (
