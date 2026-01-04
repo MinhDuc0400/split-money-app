@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, Check, ChevronDown, Trash2, Pencil, X } from 'lucide-react';
+import { Plus, Check, ChevronDown, Trash2, Pencil, X, Hash } from 'lucide-react';
 import { useGroup } from '../context/GroupContext';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CURRENCIES, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '../lib/currency';
+import { JoinGroupOverlay } from './auth/JoinGroupOverlay';
 
 export function GroupSelector({ className }: { className?: string }) {
     const { groups, activeGroupId, switchGroup, createGroup, deleteGroup, updateGroup, isLoading } = useGroup();
@@ -11,6 +12,7 @@ export function GroupSelector({ className }: { className?: string }) {
     const [isCreating, setIsCreating] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
     const [newGroupCurrency, setNewGroupCurrency] = useState('USD');
+    const [isJoiningCode, setIsJoiningCode] = useState(false);
 
     // Rename state
     const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
@@ -158,12 +160,18 @@ export function GroupSelector({ className }: { className?: string }) {
                                             </div>
                                         ))}
                                     </div>
-                                    <div className="p-2 border-t border-border bg-secondary/20">
+                                    <div className="p-2 border-t border-border bg-secondary/20 flex gap-2">
                                         <button
                                             onClick={() => { setIsCreating(true); }}
-                                            className="w-full flex items-center justify-center gap-2 p-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
+                                            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
                                         >
                                             <Plus className="w-4 h-4" /> New Group
+                                        </button>
+                                        <button
+                                            onClick={() => { setIsJoiningCode(true); }}
+                                            className="flex-1 flex items-center justify-center gap-2 p-2 rounded-lg bg-secondary text-foreground text-sm font-medium hover:bg-secondary/80 transition-colors border border-border"
+                                        >
+                                            <Hash className="w-4 h-4" /> Join Group
                                         </button>
                                     </div>
                                 </>
@@ -211,6 +219,10 @@ export function GroupSelector({ className }: { className?: string }) {
                             )}
                         </motion.div>
                     </>
+                )}
+                {/* Join Modal */}
+                {isJoiningCode && (
+                    <JoinGroupOverlay onClose={() => setIsJoiningCode(false)} />
                 )}
             </AnimatePresence>
         </div>

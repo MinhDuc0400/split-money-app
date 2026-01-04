@@ -5,7 +5,7 @@ import { calculateBalances, calculateSettlements } from '../lib/accounting';
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup
 } from '../store/slices/groupSlice';
 import {
     deleteGroupData
@@ -39,6 +39,7 @@ interface GroupContextType {
     updateGroup: (id: string, name: string, currency: string) => void;
     switchGroup: (id: string) => void;
     deleteGroup: (id: string) => void;
+    joinGroup: (code: string) => Promise<void>;
     refreshGroups: () => void;
 }
 
@@ -145,6 +146,10 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
+    const handleJoinGroup = async (code: string) => {
+        await dispatch(joinGroup(code)).unwrap();
+    };
+
     const handleRefreshGroups = () => {
         void dispatch(fetchGroups());
     };
@@ -178,6 +183,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 updateGroup: handleUpdateGroup,
                 switchGroup: handleSwitchGroup,
                 deleteGroup: handleDeleteGroup,
+                joinGroup: handleJoinGroup,
                 refreshGroups: handleRefreshGroups
             }}
         >

@@ -37,6 +37,10 @@ export const deleteGroupApi = createAsyncThunk('groups/delete', async (id: strin
     return id;
 });
 
+export const joinGroup = createAsyncThunk('groups/join', async (code: string) => {
+    return await api.post<GroupMeta>(API_ENDPOINTS.GROUPS.JOIN, { code });
+});
+
 const groupSlice = createSlice({
     name: 'groups',
     initialState,
@@ -83,6 +87,23 @@ const groupSlice = createSlice({
                 if (state.activeId === action.payload) {
                     state.activeId = state.items.length > 0 ? state.items[0].id : null;
                 }
+            })
+            // Join Group
+            .addCase(joinGroup.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(joinGroup.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // Avoid duplicates if user is already in it
+                if (!state.items.find(g => g.id === action.payload.id)) {
+                    state.items.push(action.payload);
+                }
+                state.activeId = action.payload.id;
+            })
+            .addCase(joinGroup.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to join group';
             });
     },
 });

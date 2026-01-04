@@ -5,10 +5,11 @@ import { BalanceCard } from './dashboard/BalanceCard';
 import { GroupDetailsCard } from './dashboard/GroupDetailsCard';
 import { QuickStatsCard } from './dashboard/QuickStatsCard';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
+import { WelcomeView } from './dashboard/WelcomeView';
 
 export function Dashboard() {
     const navigate = useNavigate();
-    const { members, expenses, balances, currency, groupName, isLoading, error } = useGroup();
+    const { groups, members, expenses, balances, currency, groupName, isLoading, error } = useGroup();
     const { owedToYou, youOwe } = useBalanceCalculations({ balances });
 
     if (isLoading) {
@@ -18,6 +19,10 @@ export function Dashboard() {
                 <p className="text-muted-foreground animate-pulse">Loading group data...</p>
             </div>
         );
+    }
+
+    if (!isLoading && groups.length === 0) {
+        return <WelcomeView />;
     }
 
     if (error && members.length === 0) {
