@@ -8,8 +8,26 @@ import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 
 export function Dashboard() {
     const navigate = useNavigate();
-    const { members, expenses, balances, currency, groupName } = useGroup();
+    const { members, expenses, balances, currency, groupName, isLoading, error } = useGroup();
     const { owedToYou, youOwe } = useBalanceCalculations({ balances });
+
+    if (isLoading) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[40vh]">
+                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-muted-foreground animate-pulse">Loading group data...</p>
+            </div>
+        );
+    }
+
+    if (error && members.length === 0) {
+        return (
+            <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-8 text-center">
+                <p className="text-destructive font-medium mb-2">Error loading data</p>
+                <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-8">
@@ -27,8 +45,8 @@ export function Dashboard() {
             </div>
 
             {/* Group Details Card */}
-            <GroupDetailsCard 
-                members={members} 
+            <GroupDetailsCard
+                members={members}
                 expenseCount={expenses.length}
                 onViewDetails={() => {
                     void navigate('/group');

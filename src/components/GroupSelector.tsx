@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CURRENCIES, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '../lib/currency';
 
 export function GroupSelector({ className }: { className?: string }) {
-    const { groups, activeGroupId, switchGroup, createGroup, deleteGroup, updateGroupName, updateGroupCurrency } = useGroup();
+    const { groups, activeGroupId, switchGroup, createGroup, deleteGroup, updateGroup, isLoading } = useGroup();
     const [isOpen, setIsOpen] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [newGroupName, setNewGroupName] = useState('');
@@ -40,8 +40,7 @@ export function GroupSelector({ className }: { className?: string }) {
     const handleSaveEdit = (e: React.MouseEvent | React.KeyboardEvent) => {
         e.stopPropagation();
         if (editingGroupId && editGroupName.trim()) {
-            updateGroupName(editingGroupId, editGroupName.trim());
-            updateGroupCurrency(editingGroupId, editGroupCurrency);
+            updateGroup(editingGroupId, editGroupName.trim(), editGroupCurrency);
             setEditingGroupId(null);
             setEditGroupName('');
             setEditGroupCurrency('');
@@ -202,10 +201,10 @@ export function GroupSelector({ className }: { className?: string }) {
                                         </button>
                                         <button
                                             type="submit"
-                                            disabled={!newGroupName.trim()}
+                                            disabled={!newGroupName.trim() || isLoading}
                                             className="flex-1 py-1.5 text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 rounded-md disabled:opacity-50"
                                         >
-                                            Create
+                                            {isLoading ? 'Creating...' : 'Create'}
                                         </button>
                                     </div>
                                 </form>

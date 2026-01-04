@@ -2,7 +2,7 @@
 
 This document provides a comprehensive review of the features, functionality, and potential improvements for the SplitMoney application.
 
-Last updated: 2025-12-30 13:35
+Last updated: 2026-01-04 13:25
 
 ---
 
@@ -375,3 +375,23 @@ The SplitMoney app is a robust and well-architected foundation for expense manag
   4. Frontend saves token, decodes user, and redirects to `/`.
 - **Files Changed:** `money-split-backend/src/auth/*`, `money-split-app/src/App.tsx`, `money-split-app/src/store/slices/authSlice.ts`, `money-split-app/src/components/auth/*`, `money-split-app/src/components/Layout.tsx`.
 - **Result:** The application now has a secure, production-ready authentication system that allows users to sign in with their Google accounts and maintains their session securely across reloads.
+
+#### 🔐 Authentication Refinement & Type Safety
+- **Objective:** Improve the robustness and type safety of the authentication flow.
+- **Changes:**
+  - **Strict Typing:** Introduced `JWTPayload` interface to define the structure of decoded tokens, eliminating `any` types in `authUtils`.
+  - **Safe Parsing:** Added try-catch blocks and explicit type assertions to `localStorage` and JWT parsing logic.
+  - **Validation:** Updated `AuthCallback.tsx` to validate mandatory fields (ID, Email) before finalizing the login.
+- **Files Changed:** `src/lib/auth.ts`, `src/types/auth.types.ts`, `src/components/auth/AuthCallback.tsx`.
+- **Result:** A more stable and developer-friendly authentication library with zero `any` types.
+
+#### 📁 Group API Integration
+- **Objective:** Synchronize group data with the backend for persistent multi-device access.
+- **Changes:**
+  - **Authenticated API Utility:** Created `src/lib/api.ts`, a wrapper around `fetch` that automatically injects the `Authorization` header.
+  - **Redux Async Thunks:** Implemented `fetchGroups`, `createGroup`, `updateGroupApi`, and `deleteGroupApi` in `groupSlice.ts`.
+  - **Context Facade Synchronization:** Updated `GroupProvider` to automatically fetch groups on mount and handle loading/error states globally.
+  - **UI Integration:** Added loading spinners to the Dashboard and "Creating..." states to the Group Selector.
+- **Persistence:** Local changes are now synchronized with the backend server at `http://localhost:3000`.
+- **Files Changed:** `src/lib/api.ts`, `src/store/slices/groupSlice.ts`, `src/context/GroupContext.tsx`, `src/components/Dashboard.tsx`, `src/components/GroupSelector.tsx`.
+- **Result:** All group-related operations (CRUD) are now fully integrated with the backend API.
