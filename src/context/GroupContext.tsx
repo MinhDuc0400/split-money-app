@@ -1,11 +1,11 @@
-import React, { createContext, useContext, useMemo, useEffect } from 'react';
-import { type Expense, type Member, type Transaction, type GroupMeta } from '../types';
+import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
+import { type Expense, type Member, type Transaction, type GroupMeta, type GroupDetail, type GroupMember } from '../types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById
 } from '../store/slices/groupSlice';
 import {
     deleteGroupData
@@ -14,6 +14,7 @@ import {
 interface GroupContextType {
     // Current Group Data
     activeGroupId: string;
+    activeGroup: GroupDetail | null;
     groupName: string;
     currency: string;
     members: Member[];
@@ -22,6 +23,7 @@ interface GroupContextType {
     error: string | null;
 
     // Group Actions
+    fetchGroupById: (id: string) => Promise<void>;
     addMember: (name: string) => void;
     updateMemberName: (id: string, name: string) => void;
     removeMember: (id: string) => void;
@@ -35,12 +37,13 @@ interface GroupContextType {
 
     // Multi-Group Management
     groups: GroupMeta[];
-    createGroup: (name: string, currency: string) => void;
+    createGroup: (name: string, currency: string) => Promise<GroupMeta>;
     updateGroup: (id: string, name: string, currency: string) => void;
     switchGroup: (id: string) => void;
     deleteGroup: (id: string) => void;
-    joinGroup: (code: string) => Promise<void>;
+    joinGroup: (code: string) => Promise<GroupMember>;
     refreshGroups: () => void;
+    overallBalances: Record<string, Record<string, number>>; // Aggregate: currency -> memberId -> balance
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
@@ -49,19 +52,29 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
 
     // Redux Selectors
-    const { items: groups, activeId: activeGroupId, isLoading, error } = useAppSelector(state => state.groups);
+    const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error } = useAppSelector(state => state.groups);
     const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
 
     const allMembers = useAppSelector(state => state.finance.members);
     const allExpenses = useAppSelector(state => state.finance.expenses);
 
     // Derived State for Current Group
-    const members = useMemo(() => allMembers[activeGroupId || ''] || [], [allMembers, activeGroupId]);
+    const members: Member[] = useMemo(() => {
+        if (activeGroup?.members) {
+            return activeGroup.members.map(m => ({
+                id: m.userId,
+                name: m.name,
+                avatar: m.avatarUrl
+            }));
+        }
+        return allMembers[activeGroupId || ''] || [];
+    }, [allMembers, activeGroupId, activeGroup]);
+
     const expenses = useMemo(() => allExpenses[activeGroupId || ''] || [], [allExpenses, activeGroupId]);
 
-    const activeGroup = groups.find(g => g.id === activeGroupId);
-    const groupName = activeGroup?.name || 'Loading...';
-    const currency = activeGroup?.currency || 'USD';
+    const currentGroupMeta = groups.find(g => g.id === activeGroupId);
+    const groupName = activeGroup?.name || currentGroupMeta?.name || 'Loading...';
+    const currency = activeGroup?.currency || currentGroupMeta?.currency || 'USD';
 
     // --- API Fetch Logic ---
     useEffect(() => {
@@ -128,8 +141,10 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     };
 
     // --- Group Management ---
-    const handleCreateGroup = (name: string, currency: string) => {
-        void dispatch(createGroup({ name, currency }));
+    const handleCreateGroup = async (name: string, currency: string) => {
+        const newGroup = await dispatch(createGroup({ name, currency })).unwrap();
+        void dispatch(fetchGroups());
+        return newGroup;
     };
 
     const handleUpdateGroup = (id: string, name: string, currency: string) => {
@@ -146,28 +161,56 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         });
     };
 
-    const handleJoinGroup = async (code: string) => {
-        await dispatch(joinGroup(code)).unwrap();
-    };
-
-    const handleRefreshGroups = () => {
+    const handleJoinGroup = useCallback(async (code: string) => {
+        const joinedMember = await dispatch(joinGroup(code)).unwrap();
         void dispatch(fetchGroups());
-    };
+        return joinedMember;
+    }, [dispatch]);
+
+    const handleFetchGroupById = useCallback(async (id: string) => {
+        await dispatch(fetchGroupById(id)).unwrap();
+    }, [dispatch]);
+
+    const handleRefreshGroups = useCallback(() => {
+        void dispatch(fetchGroups());
+    }, [dispatch]);
 
     // Derived calculations
     const balances = useMemo(() => calculateBalances(members, expenses), [members, expenses]);
     const settlements = useMemo(() => calculateSettlements(balances), [balances]);
 
+    // Aggregate balances across all groups
+    const overallBalances = useMemo(() => {
+        const aggregated: Record<string, Record<string, number>> = {};
+
+        groups.forEach(group => {
+            const groupMembers = allMembers[group.id] || [];
+            const groupExpenses = allExpenses[group.id] || [];
+            const groupBalances = calculateBalances(groupMembers, groupExpenses);
+
+            Object.entries(groupBalances).forEach(([curr, currBalances]) => {
+                if (!aggregated[curr]) aggregated[curr] = {};
+                Object.entries(currBalances).forEach(([memberId, balance]) => {
+                    aggregated[curr][memberId] = (aggregated[curr][memberId] || 0) + balance;
+                });
+            });
+        });
+
+        return aggregated;
+    }, [groups, allMembers, allExpenses]);
+
     return (
         <GroupContext.Provider
             value={{
                 activeGroupId: activeGroupId || '',
+                activeGroup,
                 groupName,
                 currency,
                 members,
                 expenses,
                 isLoading,
                 error,
+                fetchGroupById: handleFetchGroupById,
                 addMember: handleAddMember,
                 updateMemberName: handleUpdateMemberName,
                 removeMember: handleRemoveMember,
@@ -184,7 +227,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 switchGroup: handleSwitchGroup,
                 deleteGroup: handleDeleteGroup,
                 joinGroup: handleJoinGroup,
-                refreshGroups: handleRefreshGroups
+                refreshGroups: handleRefreshGroups,
+                overallBalances
             }}
         >
             {children}

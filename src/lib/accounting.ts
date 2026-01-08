@@ -215,3 +215,23 @@ export function calculateSplits(
 
     return { success: true, splits };
 }
+// ---------- History Grouping ----------
+
+export function groupExpensesByMonth(expenses: Expense[]): Record<string, Expense[]> {
+    const grouped: Record<string, Expense[]> = {};
+
+    // Sort expenses by date descending
+    const sortedExpenses = [...expenses].sort((a, b) => b.createdAt - a.createdAt);
+
+    sortedExpenses.forEach(expense => {
+        const date = new Date(expense.createdAt);
+        const monthYear = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        if (!grouped[monthYear]) {
+            grouped[monthYear] = [];
+        }
+        grouped[monthYear].push(expense);
+    });
+
+    return grouped;
+}

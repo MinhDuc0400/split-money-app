@@ -4,6 +4,8 @@ import storage from 'redux-persist/lib/storage'; // defaults to localStorage
 import groupReducer from './slices/groupSlice';
 import financeReducer from './slices/financeSlice';
 import authReducer from './slices/authSlice';
+import { logout } from './slices/authSlice';
+import { registerUnauthorizedHandler } from '../lib/api';
 
 const rootReducer = combineReducers({
     groups: groupReducer,
@@ -27,6 +29,10 @@ export const store = configureStore({
                 ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
             },
         }),
+});
+
+registerUnauthorizedHandler(() => {
+    store.dispatch(logout());
 });
 
 export const persistor = persistStore(store);

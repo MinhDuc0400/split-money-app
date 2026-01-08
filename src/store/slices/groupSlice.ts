@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { GroupMeta } from '../../types';
+import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants';
 
 interface GroupState {
     items: GroupMeta[];
+    activeGroup: GroupDetail | null;
     activeId: string | null;
     isLoading: boolean;
     error: string | null;
@@ -12,6 +13,7 @@ interface GroupState {
 
 const initialState: GroupState = {
     items: [],
+    activeGroup: null,
     activeId: null,
     isLoading: false,
     error: null,
@@ -19,6 +21,10 @@ const initialState: GroupState = {
 
 export const fetchGroups = createAsyncThunk('groups/fetchAll', async () => {
     return await api.get<GroupMeta[]>(API_ENDPOINTS.GROUPS.BASE);
+});
+
+export const fetchGroupById = createAsyncThunk('groups/fetchById', async (id: string) => {
+    return await api.get<GroupDetail>(API_ENDPOINTS.GROUPS.BY_ID(id));
 });
 
 export const createGroup = createAsyncThunk('groups/create', async (data: { name: string; currency: string }) => {
@@ -37,8 +43,8 @@ export const deleteGroupApi = createAsyncThunk('groups/delete', async (id: strin
     return id;
 });
 
-export const joinGroup = createAsyncThunk('groups/join', async (code: string) => {
-    return await api.post<GroupMeta>(API_ENDPOINTS.GROUPS.JOIN, { code });
+export const joinGroup = createAsyncThunk('groups/join', async (inviteCode: string) => {
+    return await api.post<GroupMember>(API_ENDPOINTS.GROUPS.JOIN, { inviteCode });
 });
 
 const groupSlice = createSlice({
@@ -95,15 +101,29 @@ const groupSlice = createSlice({
             })
             .addCase(joinGroup.fulfilled, (state, action) => {
                 state.isLoading = false;
-                // Avoid duplicates if user is already in it
-                if (!state.items.find(g => g.id === action.payload.id)) {
-                    state.items.push(action.payload);
-                }
-                state.activeId = action.payload.id;
+                // The API returns a GroupMember object which contains the groupId
+                const { groupId } = action.payload;
+                state.activeId = groupId;
+                // Note: We might need to refresh state.items (GroupMeta[]) to include the new group
             })
             .addCase(joinGroup.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to join group';
+            })
+            // Fetch Group By Id
+            .addCase(fetchGroupById.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchGroupById.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.activeGroup = action.payload;
+                // Sync activeId if not already set or different
+                state.activeId = action.payload.id;
+            })
+            .addCase(fetchGroupById.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to fetch group details';
             });
     },
 });

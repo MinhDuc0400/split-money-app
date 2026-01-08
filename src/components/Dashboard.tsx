@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
 import { TotalSpentCard } from './dashboard/TotalSpentCard';
 import { BalanceCard } from './dashboard/BalanceCard';
@@ -6,17 +6,34 @@ import { GroupDetailsCard } from './dashboard/GroupDetailsCard';
 import { QuickStatsCard } from './dashboard/QuickStatsCard';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { WelcomeView } from './dashboard/WelcomeView';
+import { useEffect } from 'react';
 
 export function Dashboard() {
     const navigate = useNavigate();
-    const { groups, members, expenses, balances, currency, groupName, isLoading, error } = useGroup();
+    const { id } = useParams<{ id: string }>();
+    const { groups, members, expenses, balances, currency, groupName, isLoading, error, activeGroupId, switchGroup } = useGroup();
     const { owedToYou, youOwe } = useBalanceCalculations({ balances });
 
-    if (isLoading) {
+    // Sync active group with URL
+    useEffect(() => {
+        if (id && id !== activeGroupId) {
+            switchGroup(id);
+        }
+    }, [id, activeGroupId, switchGroup]);
+
+    const groupExists = groups.some(g => g.id === id);
+
+    if (id && !groupExists && !isLoading) {
         return (
-            <div className="flex flex-col items-center justify-center min-h-[40vh]">
-                <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-muted-foreground animate-pulse">Loading group data...</p>
+            <div className="text-center py-20">
+                <h2 className="text-2xl font-bold mb-2">Group Not Found</h2>
+                <p className="text-muted-foreground mb-6">The group you're looking for doesn't exist or you don't have access.</p>
+                <button
+                    onClick={() => navigate('/')}
+                    className="bg-primary text-primary-foreground px-6 py-2 rounded-xl font-bold"
+                >
+                    Back to Overview
+                </button>
             </div>
         );
     }

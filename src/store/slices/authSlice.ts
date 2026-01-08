@@ -26,9 +26,8 @@ const authSlice = createSlice({
             state.user = null;
             state.token = null;
             state.isAuthenticated = false;
-            // Clear manual storage too
-            localStorage.removeItem('splitmoney_auth_token');
-            localStorage.removeItem('splitmoney_user');
+            // Clear all storage for a complete reset
+            localStorage.clear();
         },
         setLoading: (state, action: PayloadAction<boolean>) => {
             state.isLoading = action.payload;

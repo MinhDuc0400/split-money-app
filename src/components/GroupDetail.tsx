@@ -1,35 +1,41 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
-import { ArrowLeft } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { SplitType, type Expense, type Split } from '../types';
-import { SectionTabs } from './group-detail/SectionTabs';
-import { MemberBalancesList } from './group-detail/MemberBalancesList';
+import { ArrowLeft, Users } from 'lucide-react';
+import { SplitType, type Expense } from '../types';
 import { SettlementPlanList } from './group-detail/SettlementPlanList';
-import { ExpensesList } from './group-detail/ExpensesList';
+import { HistoryList } from './group-detail/HistoryList';
 import { EditExpenseModal } from './group-detail/EditExpenseModal';
-
-// Helper: infer split type label from expense data when explicit type is unknown or custom
-function inferSplitType(expense: Expense): 'Equal' | 'Exact' | 'Custom' {
-    try {
-        if (!expense || !Array.isArray(expense.splits) || expense.splits.length === 0) return 'Custom';
-        const amounts = expense.splits.map((s: Split) => Number(s.amount ?? 0));
-        const total = amounts.reduce((a: number, b: number) => a + b, 0);
-        if (total === 0) return 'Custom';
-        const avg = total / amounts.length;
-        const isEven = amounts.every((a: number) => Math.abs(a - avg) < 0.01);
-        return isEven ? 'Equal' : 'Exact';
-    } catch {
-        return 'Custom';
-    }
-}
+import { InvitationBox } from './group-detail/InvitationBox';
+import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
+import { BalanceCard } from './dashboard/BalanceCard';
 
 export function GroupDetail() {
     const navigate = useNavigate();
-    const { members, expenses, settlements, balances, deleteExpense, updateExpense, currency, groupName } = useGroup();
+    const { id: routeId } = useParams<{ id: string }>();
+    const {
+        members,
+        expenses,
+        settlements,
+        balances,
+        deleteExpense,
+        updateExpense,
+        currency,
+        groupName,
+        activeGroup,
+        fetchGroupById
+    } = useGroup();
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-    const [activeSection, setActiveSection] = useState<'members' | 'payments'>('members');
+
+    // Fetch group details on mount or ID change
+    useEffect(() => {
+        if (routeId) {
+            void fetchGroupById(routeId);
+        }
+    }, [routeId, fetchGroupById]);
+
+    // Personal balance summary
+    const { owedToYou, youOwe } = useBalanceCalculations({ balances });
 
     const getMemberName = (id: string) => members.find(m => m.id === id)?.name || 'Unknown';
     const getMemberAvatar = (id: string) => members.find(m => m.id === id)?.avatar;
@@ -47,7 +53,6 @@ export function GroupDetail() {
 
     const expenseToEdit = expenses.find(e => e.id === editingExpenseId);
 
-    // Prepare initial data for form
     const initialFormData = expenseToEdit ? {
         description: expenseToEdit.description,
         amount: expenseToEdit.amount,
@@ -61,57 +66,86 @@ export function GroupDetail() {
     } : undefined;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8 pb-12">
             {/* Header */}
-            <div className="flex items-center gap-4">
-                <button
-                    onClick={() => navigate('/')}
-                    className="p-2 hover:bg-secondary rounded-full transition-colors"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                    <h1 className="text-2xl font-bold">{groupName}</h1>
-                    <p className="text-sm text-muted-foreground">Group Details</p>
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="p-2 hover:bg-secondary rounded-full transition-colors"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <div>
+                        <h1 className="text-3xl font-bold">{groupName}</h1>
+                        <div className="flex items-center gap-2 text-muted-foreground mt-1">
+                            <Users className="w-4 h-4" />
+                            <span className="text-sm font-medium">{members.length} members</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Section Tabs */}
-            <SectionTabs activeSection={activeSection} onSectionChange={setActiveSection} />
+            {/* Balances & Settlement Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-gradient-to-br from-primary/5 via-transparent to-primary/5 rounded-3xl p-6 border border-border/50">
+                        <h3 className="text-lg font-bold mb-6">Your Status</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <BalanceCard type="owed" balances={owedToYou} />
+                            <BalanceCard type="owing" balances={youOwe} />
+                        </div>
+                    </div>
 
-            {/* Members Section */}
-            {activeSection === 'members' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                >
-                    <MemberBalancesList members={members} balances={balances} />
-                    <SettlementPlanList 
-                        settlements={settlements} 
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 px-2">
+                                <Users className="w-5 h-5 text-primary" />
+                                <h3 className="font-bold">Members</h3>
+                            </div>
+                            <div className="flex -space-x-2 overflow-hidden px-2">
+                                {members.slice(0, 5).map((member, i) => (
+                                    <div key={member.id} className="inline-block h-10 w-10 rounded-full ring-2 ring-background bg-secondary overflow-hidden" style={{ zIndex: 10 - i }}>
+                                        <img src={member.avatar} alt={member.name} className="h-full w-full object-cover" />
+                                    </div>
+                                ))}
+                                {members.length > 5 && (
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-xs font-medium ring-2 ring-background">
+                                        +{members.length - 5}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {activeGroup?.inviteCode && (
+                            <InvitationBox inviteCode={activeGroup.inviteCode} />
+                        )}
+                    </div>
+                </div>
+
+                <div className="space-y-6">
+                    <SettlementPlanList
+                        settlements={settlements}
                         getMemberName={getMemberName}
                         getMemberAvatar={getMemberAvatar}
                     />
-                </motion.div>
-            )}
+                </div>
+            </div>
 
-            {/* Payments Section */}
-            {activeSection === 'payments' && (
-                <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                >
-                    <ExpensesList
-                        expenses={expenses}
-                        currency={currency}
-                        getMemberName={getMemberName}
-                        onEdit={handleEditClick}
-                        onDelete={deleteExpense}
-                        inferSplitType={inferSplitType}
-                    />
-                </motion.div>
-            )}
+            {/* History Section */}
+            <div className="space-y-6">
+                <div className="flex items-center justify-between px-2">
+                    <h2 className="text-2xl font-bold italic tracking-tight">Payment History</h2>
+                </div>
+
+                <HistoryList
+                    expenses={expenses}
+                    currency={currency}
+                    getMemberName={getMemberName}
+                    onEdit={handleEditClick}
+                    onDelete={deleteExpense}
+                />
+            </div>
 
             {/* Edit Modal */}
             <EditExpenseModal

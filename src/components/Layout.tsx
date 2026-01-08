@@ -1,13 +1,15 @@
 import React from 'react';
-import { LayoutDashboard, Users, PlusCircle, LogIn, LogOut } from 'lucide-react';
+import { LayoutDashboard, Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
-import { GroupSelector } from './GroupSelector';
 import { AppTab } from '../types';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useGroup } from '../context/GroupContext';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from '../store';
 import { logout } from '../store/slices/authSlice';
-import { useNavigate } from 'react-router-dom';
+import { GroupActionModal } from './GroupActionModal';
+import { useState } from 'react';
+import type { RootState } from '../store';
 
 interface NavItemProps {
     icon: React.ElementType;
@@ -38,10 +40,13 @@ interface LayoutProps {
     onAddExpense: () => void;
 }
 
-export function Layout({ children, activeTab, onTabChange, onAddExpense }: LayoutProps) {
+export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab' | 'onTabChange'>) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
+    const { activeGroupId, groups, switchGroup } = useGroup();
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+    const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
     const handleLogout = () => {
         dispatch(logout());
@@ -84,25 +89,77 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
                     )}
                 </div>
 
-                <div className="mb-6">
-                    <GroupSelector />
-                </div>
 
                 <nav className="flex-1 space-y-2">
                     <button
-                        onClick={() => { onTabChange(AppTab.DASHBOARD); }}
-                        className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", activeTab === AppTab.DASHBOARD ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
+                        onClick={() => { void navigate('/'); }}
+                        className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname === '/' ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
                     >
-                        <LayoutDashboard className="w-5 h-5" />
-                        <span className="font-medium">Dashboard</span>
+                        <Home className="w-5 h-5" />
+                        <span className="font-medium">Overview</span>
                     </button>
-                    <button
-                        onClick={() => { onTabChange(AppTab.MEMBERS); }}
-                        className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", activeTab === AppTab.MEMBERS ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
-                    >
-                        <Users className="w-5 h-5" />
-                        <span className="font-medium">Members</span>
-                    </button>
+
+                    <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                        Groups
+                    </div>
+
+                    <div className="space-y-1 overflow-y-auto max-h-[300px] mb-2 custom-scrollbar">
+                        {groups.map(group => {
+                            const isActive = location.pathname.startsWith(`/group/${group.id}`);
+                            return (
+                                <button
+                                    key={group.id}
+                                    onClick={() => {
+                                        switchGroup(group.id);
+                                        void navigate(`/group/${group.id}/details`);
+                                    }}
+                                    className={cn(
+                                        "w-full flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all text-sm",
+                                        isActive
+                                            ? "bg-primary/10 text-primary font-bold"
+                                            : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                    )}
+                                >
+                                    <div className={cn(
+                                        "w-1.5 h-1.5 rounded-full transition-colors",
+                                        isActive ? "bg-primary" : "bg-transparent group-hover:bg-muted-foreground/30"
+                                    )} />
+                                    <span className="truncate">{group.name}</span>
+                                </button>
+                            );
+                        })}
+
+                        <button
+                            onClick={() => setIsActionModalOpen(true)}
+                            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-primary/5 hover:text-primary border border-dashed border-border/50 mt-1 transition-all group"
+                        >
+                            <PlusCircle className="w-4 h-4" />
+                            <span className="font-medium">New / Join Group</span>
+                        </button>
+                    </div>
+
+                    {/* {activeGroupId && (
+                        <>
+                            <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-t border-border/50 mt-2">
+                                Current View
+                            </div>
+
+                            <button
+                                onClick={() => { void navigate(`/group/${activeGroupId}`); }}
+                                className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname === `/group/${activeGroupId}` ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
+                            >
+                                <LayoutDashboard className="w-5 h-5" />
+                                <span className="font-medium">Dashboard</span>
+                            </button>
+                            <button
+                                onClick={() => { void navigate(`/group/${activeGroupId}/members`); }}
+                                className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname.includes('/members') ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
+                            >
+                                <Users className="w-5 h-5" />
+                                <span className="font-medium">Members</span>
+                            </button>
+                        </>
+                    )} */}
                 </nav>
 
                 <div className="pt-4 border-t border-border flex items-center justify-between">
@@ -124,8 +181,17 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
                         </h1>
                     </div>
 
-                    <div className="flex-1 max-w-[200px] mx-2">
-                        <GroupSelector />
+                    <div className="flex-1 max-w-[200px] mx-2 flex justify-center">
+                        {location.pathname !== '/' ? (
+                            <button
+                                onClick={() => void navigate('/')}
+                                className="flex items-center gap-1 text-sm font-medium text-muted-foreground"
+                            >
+                                <ChevronLeft className="w-4 h-4" /> Back
+                            </button>
+                        ) : (
+                            <span className="text-sm font-bold truncate px-2 py-1 bg-secondary/50 rounded-lg">Overview</span>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -175,25 +241,39 @@ export function Layout({ children, activeTab, onTabChange, onAddExpense }: Layou
 
                     <div className="flex-1 flex justify-around pr-8">
                         <NavItem
-                            icon={LayoutDashboard}
-                            label="Home"
-                            active={activeTab === AppTab.DASHBOARD}
-                            onClick={() => { onTabChange(AppTab.DASHBOARD); }}
+                            icon={Home}
+                            label="Overview"
+                            active={location.pathname === '/'}
+                            onClick={() => { void navigate('/'); }}
                         />
                     </div>
 
                     <div className="w-12"></div> {/* Spacer for FAB */}
 
                     <div className="flex-1 flex justify-around pl-8">
-                        <NavItem
-                            icon={Users}
-                            label="Members"
-                            active={activeTab === AppTab.MEMBERS}
-                            onClick={() => { onTabChange(AppTab.MEMBERS); }}
-                        />
+                        {activeGroupId ? (
+                            <NavItem
+                                icon={LayoutDashboard}
+                                label="Group"
+                                active={location.pathname.includes('/group/')}
+                                onClick={() => { void navigate(`/group/${activeGroupId}`); }}
+                            />
+                        ) : (
+                            <NavItem
+                                icon={Users}
+                                label="About"
+                                active={false}
+                                onClick={() => { }}
+                            />
+                        )}
                     </div>
                 </div>
             </nav>
+
+            <GroupActionModal
+                isOpen={isActionModalOpen}
+                onClose={() => setIsActionModalOpen(false)}
+            />
         </div>
     );
 }

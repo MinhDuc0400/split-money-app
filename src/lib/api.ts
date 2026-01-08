@@ -4,6 +4,12 @@ interface RequestOptions extends RequestInit {
     params?: Record<string, string>;
 }
 
+let onUnauthorized: (() => void) | null = null;
+
+export function registerUnauthorizedHandler(handler: () => void) {
+    onUnauthorized = handler;
+}
+
 async function request<T>(url: string, options: RequestOptions = {}): Promise<T> {
     const { params, headers, ...rest } = options;
 
@@ -34,6 +40,10 @@ async function request<T>(url: string, options: RequestOptions = {}): Promise<T>
     });
 
     if (!response.ok) {
+        if (response.status === 401) {
+            onUnauthorized?.();
+            // The App component will notice isAuthenticated is false and redirect to /login
+        }
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || `Request failed with status ${response.status}`);
     }
