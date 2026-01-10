@@ -58,10 +58,11 @@ export function GroupDetail() {
         amount: expenseToEdit.amount,
         currency: expenseToEdit.currency || currency,
         payerId: expenseToEdit.payerId,
+        payers: expenseToEdit.payers,
         splitType: expenseToEdit.splitType,
         splits: expenseToEdit.splits,
         manualAmounts: expenseToEdit.splitType === SplitType.EXACT
-            ? expenseToEdit.splits.reduce<Record<string, string>>((acc, s) => ({ ...acc, [s.memberId]: s.amount.toString() }), {})
+            ? expenseToEdit.splits.reduce<Record<string, string>>((acc, s) => ({ ...acc, [s.memberId]: (s.amount ?? 0).toString() }), {})
             : {}
     } : undefined;
 

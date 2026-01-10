@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
-import { type Expense, type Member, type Transaction, type GroupMeta, type GroupDetail, type GroupMember } from '../types';
+import { type Expense, type Member, type Transaction, type GroupMeta, type GroupDetail, type GroupMember, type CreateExpenseRequest, type UpdateExpenseRequest } from '../types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense
 } from '../store/slices/groupSlice';
 import {
     deleteGroupData
@@ -28,8 +28,8 @@ interface GroupContextType {
     updateMemberName: (id: string, name: string) => void;
     removeMember: (id: string) => void;
     removeMemberAndRedistribute: (id: string) => void;
-    addExpense: (expense: Omit<Expense, 'id' | 'createdAt'>) => void;
-    updateExpense: (id: string, expenseData: Omit<Expense, 'id' | 'createdAt'>) => void;
+    addExpense: (data: CreateExpenseRequest) => Promise<void>;
+    updateExpense: (id: string, expenseData: UpdateExpenseRequest) => void;
     deleteExpense: (id: string) => void;
     balances: Record<string, Record<string, number>>; // currency -> memberId -> balance
     settlements: Transaction[];
@@ -62,7 +62,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const members: Member[] = useMemo(() => {
         if (activeGroup?.members) {
             return activeGroup.members.map(m => ({
-                id: m.userId,
+                id: m.id,
                 name: m.name,
                 avatar: m.avatarUrl
             }));
@@ -114,18 +114,14 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'finance/removeMemberAndRedistribute', payload: { groupId: activeGroupId, memberId: id } });
     };
 
-    const handleAddExpense = (expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
+    const handleAddExpense = async (expenseData: CreateExpenseRequest) => {
         if (!activeGroupId) return;
-        const newExpense: Expense = {
-            ...expenseData,
-            id: crypto.randomUUID(),
-            createdAt: Date.now(),
-        };
-        // TODO: Move to API
-        dispatch({ type: 'finance/addExpense', payload: { groupId: activeGroupId, expense: newExpense } });
+        await dispatch(createExpense({ groupId: activeGroupId, data: expenseData })).unwrap();
+        // The slice handles updating the activeGroup count, but we also need to refresh the history
+        void dispatch(fetchGroupById(activeGroupId));
     };
 
-    const handleUpdateExpense = (id: string, expenseData: Omit<Expense, 'id' | 'createdAt'>) => {
+    const handleUpdateExpense = (id: string, expenseData: UpdateExpenseRequest) => {
         if (!activeGroupId) return;
         // TODO: Move to API
         dispatch({ type: 'finance/updateExpense', payload: { groupId: activeGroupId, expenseId: id, data: expenseData } });

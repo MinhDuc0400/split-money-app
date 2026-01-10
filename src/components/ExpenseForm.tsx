@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useGroup } from '../context/GroupContext';
 import { calculateSplits } from '../lib/accounting';
-import { SplitType, type Split } from '../types';
+import { SplitType, type Split, type Payer, type CreateExpenseRequest } from '../types';
 import { AmountInput } from './expense-form/AmountInput';
 import { PayerSelector } from './expense-form/PayerSelector';
+import { MultiPayerSelector } from './expense-form/MultiPayerSelector';
 import { SplitTypeSelector } from './expense-form/SplitTypeSelector';
 import { SplitEven } from './expense-form/SplitEven';
 import { SplitExact } from './expense-form/SplitExact';
@@ -17,20 +18,13 @@ interface ExpenseFormProps {
         description: string;
         amount: number;
         currency: string;
-        payerId: string;
+        payerId?: string;
+        payers?: Payer[];
         splitType: SplitType;
         splits: Split[];
         manualAmounts: Record<string, string>;
     };
-    onSubmit: (data: {
-        description: string;
-        amount: number;
-        currency: string;
-        payerId: string;
-        splitType: SplitType;
-        splits: Split[];
-        date: string;
-    }) => void;
+    onSubmit: (data: CreateExpenseRequest) => void;
     submitLabel?: string;
 }
 
@@ -40,7 +34,17 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
     const [description, setDescription] = useState(initialData?.description || '');
     const [amount, setAmount] = useState(initialData?.amount.toString() || '');
     const [currency, setCurrency] = useState(initialData?.currency || groupCurrency);
-    const [payerId, setPayerId] = useState(initialData?.payerId || (members[0]?.id || ''));
+
+    // Multiple payers state - default to false for new expenses
+    const [isMultiPayer, setIsMultiPayer] = useState(initialData?.payers ? initialData.payers.length > 1 : false);
+    const [payers, setPayers] = useState<Payer[]>(() => {
+        if (initialData?.payers && initialData.payers.length > 0) return initialData.payers;
+        // Default to a single payer (usually the first member of the group)
+        const defaultPayerId = initialData?.payerId || (members[0]?.id || '');
+        const defaultAmount = parseFloat(removeThousandsSeparator(amount || '0')) || 0;
+        return [{ memberId: defaultPayerId, amount: defaultAmount }];
+    });
+
     const [splitType, setSplitType] = useState<SplitType>(initialData?.splitType || SplitType.EVEN);
     // Exact amounts: Record<MemberID, AmountString>
     const [manualAmounts, setManualAmounts] = useState<Record<string, string>>(initialData?.manualAmounts || {});
@@ -52,7 +56,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
     const [included, setIncluded] = useState<Record<string, boolean>>(() => {
         // If editing an equal-split expense, preselect members present in splits with amount > 0
         if (initialData && initialData.splitType === SplitType.EVEN && Array.isArray(initialData.splits)) {
-            const selected = new Set(initialData.splits.filter(s => s.amount > 0).map(s => s.memberId));
+            const selected = new Set(initialData.splits.filter(s => (s.amount ?? 0) > 0).map(s => s.memberId));
             const obj: Record<string, boolean> = {};
             members.forEach(m => { obj[m.id] = selected.has(m.id); });
             return obj;
@@ -86,10 +90,6 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
         });
     }
 
-    // Ensure payerId is valid if members change
-    // Using derived state instead of useEffect to avoid cascading renders
-    const validPayerId = members.find(m => m.id === payerId) ? payerId : (members[0]?.id || '');
-
     // Equal split preview value computed at top-level to avoid conditional hook usage
     const equalEach = useMemo(() => {
         const total = parseFloat(removeThousandsSeparator(amount || '0'));
@@ -97,6 +97,17 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
         if (!isFinite(total) || n === 0) return '0.00';
         return (total / n).toFixed(2);
     }, [amount, members, included]);
+
+    // Sync single payer amount when the main amount field changes
+    // This ensures that switching to Multiple Payers later has the correct initial amount
+    useEffect(() => {
+        if (!isMultiPayer && payers.length === 1) {
+            const currentAmount = parseFloat(removeThousandsSeparator(amount || '0')) || 0;
+            if (payers[0].amount !== currentAmount) {
+                setPayers([{ ...payers[0], amount: currentAmount }]);
+            }
+        }
+    }, [amount, isMultiPayer, payers]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -115,10 +126,14 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
         // Prepare data for calculation
         const options: {
             includedMemberIds?: string[];
-            manualAmounts?: Record<string, number>;
-            percentages?: Record<string, number>;
-            shares?: Record<string, number>;
-        } = {};
+            manualAmounts: Record<string, number>;
+            percentages: Record<string, number>;
+            shares: Record<string, number>;
+        } = {
+            manualAmounts: {},
+            percentages: {},
+            shares: {}
+        };
 
         if (splitType === SplitType.EVEN) {
             options.includedMemberIds = members.filter(m => included[m.id]).map(m => m.id);
@@ -142,7 +157,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
                 alert('Shares must be integers (0 or more).');
                 return;
             }
-            
+
             options.shares = {};
             members.forEach(m => {
                 const val = (shares[m.id] || '').trim();
@@ -159,11 +174,18 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
 
         const splits = result.splits;
 
+        // Final validation of payers
+        const payersTotal = payers.reduce((sum, p) => sum + p.amount, 0);
+        if (Math.abs(payersTotal - totalAmount) > 0.01) {
+            alert(`The sum of payer amounts (${payersTotal.toFixed(2)}) must equal the total amount (${totalAmount.toFixed(2)}).`);
+            return;
+        }
+
         onSubmit({
             description,
             amount: totalAmount,
             currency,
-            payerId: validPayerId,
+            payers: isMultiPayer ? payers : [{ memberId: payers[0].memberId, amount: totalAmount }],
             splitType,
             splits,
             date: new Date().toISOString()
@@ -180,7 +202,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <AmountInput 
+            <AmountInput
                 amount={amount}
                 setAmount={setAmount}
                 description={description}
@@ -204,19 +226,42 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
                 </select>
             </div>
 
-            <PayerSelector 
-                members={members}
-                payerId={validPayerId}
-                setPayerId={setPayerId}
-            />
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paid By</label>
+                    <button
+                        type="button"
+                        onClick={() => setIsMultiPayer(!isMultiPayer)}
+                        className="text-xs font-medium text-primary hover:underline"
+                    >
+                        {isMultiPayer ? 'Select Single Payer' : 'Multiple Payers'}
+                    </button>
+                </div>
 
-            <SplitTypeSelector 
+                {isMultiPayer ? (
+                    <MultiPayerSelector
+                        members={members}
+                        payers={payers}
+                        setPayers={setPayers}
+                        totalAmount={parseFloat(removeThousandsSeparator(amount || '0'))}
+                        currency={currency}
+                    />
+                ) : (
+                    <PayerSelector
+                        members={members}
+                        payerId={payers[0]?.memberId || ''}
+                        setPayerId={(id) => setPayers([{ memberId: id, amount: parseFloat(removeThousandsSeparator(amount || '0')) }])}
+                    />
+                )}
+            </div>
+
+            <SplitTypeSelector
                 splitType={splitType}
                 setSplitType={setSplitType}
             />
 
             {splitType === SplitType.EVEN && (
-                <SplitEven 
+                <SplitEven
                     members={members}
                     included={included}
                     setIncluded={setIncluded}
@@ -225,7 +270,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             )}
 
             {splitType === SplitType.EXACT && (
-                <SplitExact 
+                <SplitExact
                     members={members}
                     manualAmounts={manualAmounts}
                     setManualAmounts={setManualAmounts}
@@ -235,7 +280,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             )}
 
             {splitType === SplitType.PERCENTAGE && (
-                <SplitPercentage 
+                <SplitPercentage
                     members={members}
                     percentages={percentages}
                     setPercentages={setPercentages}
@@ -244,7 +289,7 @@ export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense'
             )}
 
             {splitType === SplitType.SHARES && (
-                <SplitShares 
+                <SplitShares
                     members={members}
                     shares={shares}
                     setShares={setShares}

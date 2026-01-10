@@ -6,27 +6,6 @@ export type SplitCalculationResult =
 
 // ---------- Helpers ----------
 
-// Allocate "totalCents" proportionally based on numeric weights
-function allocateByWeights(weights: number[], totalCents: number): number[] {
-    const raw = weights.map(w => {
-        const exact = (totalCents * w) / weights.reduce((a, b) => a + b, 0);
-        return { base: Math.floor(exact), frac: exact - Math.floor(exact) };
-    });
-
-    const assigned = raw.reduce((a, b) => a + b.base, 0);
-    let rem = totalCents - assigned;
-
-    const order = raw
-        .map((r, idx) => ({ idx, frac: r.frac }))
-        .sort((a, b) => b.frac - a.frac);
-
-    const cents = raw.map(r => r.base);
-    for (let i = 0; i < order.length && rem > 0; i++, rem--) {
-        cents[order[i].idx] += 1;
-    }
-
-    return cents;
-}
 
 // ---------- Balances ----------
 
@@ -48,10 +27,18 @@ export function calculateBalances(
 
         currencyExpenses.forEach(expense => {
             const amountCents = Math.round(expense.amount * 100);
-            balances[expense.payerId] += amountCents;
+
+            if (expense.payers && expense.payers.length > 0) {
+                expense.payers.forEach(payer => {
+                    balances[payer.memberId] += Math.round(payer.amount * 100);
+                });
+            } else if (expense.payerId) {
+                // Fallback for legacy data
+                balances[expense.payerId] += amountCents;
+            }
 
             expense.splits.forEach(split => {
-                balances[split.memberId] -= Math.round(split.amount * 100);
+                balances[split.memberId] -= Math.round((split.amount || 0) * 100);
             });
         });
 
@@ -138,13 +125,9 @@ export function calculateSplits(
             if (!participants.length)
                 return { success: false, error: "Please select at least one participant." };
 
-            const base = Math.floor(totalCents / participants.length);
-            const remainder = totalCents % participants.length;
 
-            splits = participants.map((m, i) => ({
-                memberId: m.id,
-                amount: (base + (i < remainder ? 1 : 0)) / 100,
-                paid: false
+            splits = participants.map((m) => ({
+                memberId: m.id
             }));
             break;
         }
@@ -161,10 +144,9 @@ export function calculateSplits(
                     error: `Exact amounts must sum to ${totalAmount.toFixed(2)}. Currently ${(sum / 100).toFixed(2)}.`
                 };
 
-            splits = members.map((m, i) => ({
+            splits = members.filter(m => (options.manualAmounts?.[m.id] || 0) > 0).map((m) => ({
                 memberId: m.id,
-                amount: cents[i] / 100,
-                paid: false
+                amount: (options.manualAmounts?.[m.id] || 0)
             }));
             break;
         }
@@ -179,12 +161,10 @@ export function calculateSplits(
                     error: `Percentages must sum to 100.00%. Currently ${sum.toFixed(2)}%.`
                 };
 
-            const cents = allocateByWeights(percentages, totalCents);
 
-            splits = members.map((m, i) => ({
+            splits = members.filter(m => (options.percentages?.[m.id] || 0) > 0).map((m) => ({
                 memberId: m.id,
-                amount: cents[i] / 100,
-                paid: false
+                percentage: options.percentages?.[m.id] || 0
             }));
             break;
         }
@@ -199,12 +179,10 @@ export function calculateSplits(
             if (totalShares <= 0)
                 return { success: false, error: "Total shares must be greater than 0." };
 
-            const cents = allocateByWeights(shares, totalCents);
 
-            splits = members.map((m, i) => ({
+            splits = members.filter(m => (options.shares?.[m.id] || 0) > 0).map((m) => ({
                 memberId: m.id,
-                amount: cents[i] / 100,
-                paid: false
+                share: options.shares?.[m.id] || 0
             }));
             break;
         }

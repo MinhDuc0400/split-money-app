@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
+import type { GroupMeta, GroupDetail, GroupMember, CreateExpenseRequest, Expense } from '../../types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants';
 
@@ -46,6 +46,13 @@ export const deleteGroupApi = createAsyncThunk('groups/delete', async (id: strin
 export const joinGroup = createAsyncThunk('groups/join', async (inviteCode: string) => {
     return await api.post<GroupMember>(API_ENDPOINTS.GROUPS.JOIN, { inviteCode });
 });
+
+export const createExpense = createAsyncThunk(
+    'groups/createExpense',
+    async ({ groupId, data }: { groupId: string; data: CreateExpenseRequest }) => {
+        return await api.post<Expense>(API_ENDPOINTS.GROUPS.EXPENSES(groupId), data);
+    }
+);
 
 const groupSlice = createSlice({
     name: 'groups',
@@ -124,6 +131,26 @@ const groupSlice = createSlice({
             .addCase(fetchGroupById.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to fetch group details';
+            })
+            // Create Expense
+            .addCase(createExpense.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(createExpense.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // After adding an expense, we should ideally refresh the group details
+                // to get the updated expense count and history.
+                // However, for immediate UI update, we could also append to a local history if we had one.
+                // Since activeGroup doesn't have the full expense list (only _count), 
+                // the full details are likely fetched elsewhere or we need to update _count.
+                if (state.activeGroup && state.activeGroup.id === action.meta.arg.groupId) {
+                    state.activeGroup._count.expenses += 1;
+                }
+            })
+            .addCase(createExpense.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to create expense';
             });
     },
 });

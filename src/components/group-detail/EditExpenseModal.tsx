@@ -1,17 +1,7 @@
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExpenseForm } from '../ExpenseForm';
-import type { SplitType, Split } from '../../types';
-
-interface ExpenseFormData {
-    description: string;
-    amount: number;
-    currency: string;
-    payerId: string;
-    splitType: SplitType;
-    splits: Split[];
-    date: string;
-}
+import type { SplitType, Split, Payer, CreateExpenseRequest } from '../../types';
 
 interface EditExpenseModalProps {
     isOpen: boolean;
@@ -19,13 +9,14 @@ interface EditExpenseModalProps {
         description: string;
         amount: number;
         currency: string;
-        payerId: string;
+        payerId?: string;
+        payers?: Payer[];
         splitType: SplitType;
         splits: Split[];
         manualAmounts: Record<string, string>;
     };
     onClose: () => void;
-    onSubmit: (data: ExpenseFormData) => void;
+    onSubmit: (data: CreateExpenseRequest) => void;
 }
 
 export function EditExpenseModal({ isOpen, initialData, onClose, onSubmit }: EditExpenseModalProps) {

@@ -21,9 +21,18 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({
 }) => {
     const isRepayment = expense.description.toLowerCase().includes('repayment') || expense.description.toLowerCase().includes('settled');
 
+    const payerNames = expense.payers?.length > 0
+        ? expense.payers.map(p => getMemberName(p.memberId))
+        : [getMemberName(expense.payerId || '')];
+
+    const displayPayer = payerNames.length > 1
+        ? (payerNames.length > 2 ? `${payerNames.slice(0, 2).join(', ')} and ${payerNames.length - 2} more` : payerNames.join(' & '))
+        : payerNames[0];
+
     // For regular expenses, we might want to show who it was for
+    const payerIds = new Set(expense.payers?.map(p => p.memberId) || [expense.payerId]);
     const receivers = expense.splits
-        .filter(s => s.memberId !== expense.payerId && s.amount > 0)
+        .filter(s => !payerIds.has(s.memberId) && (s.amount ?? 0) > 0)
         .map(s => getMemberName(s.memberId));
 
     return (
@@ -41,7 +50,7 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({
                 <div>
                     <p className="font-semibold text-sm">{expense.description}</p>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                        <span className="font-medium text-foreground">{getMemberName(expense.payerId)}</span>
+                        <span className="font-medium text-foreground">{displayPayer}</span>
                         {isRepayment ? ' paid ' : ' paid for '}
                         <span className="font-medium text-foreground">
                             {receivers.length > 0 ? (receivers.length > 2 ? `${receivers.slice(0, 2).join(', ')} and ${receivers.length - 2} more` : receivers.join(', ')) : 'themselves'}
