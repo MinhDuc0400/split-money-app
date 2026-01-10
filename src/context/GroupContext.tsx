@@ -1,11 +1,13 @@
 import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
-import { type Expense, type Member, type Transaction, type GroupMeta, type GroupDetail, type GroupMember, type CreateExpenseRequest, type UpdateExpenseRequest } from '../types';
+import { type Member, type Transaction } from '../types';
+import { type GroupMeta, type GroupDetail, type GroupMember } from '../types/group.types';
+import { type Expense, type CreateExpenseRequest, type UpdateExpenseRequest, type TransactionHistoryMap } from '../types/expense.types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, fetchTransactions
 } from '../store/slices/groupSlice';
 import {
     deleteGroupData
@@ -19,6 +21,7 @@ interface GroupContextType {
     currency: string;
     members: Member[];
     expenses: Expense[];
+    transactions: TransactionHistoryMap;
     isLoading: boolean;
     error: string | null;
 
@@ -52,7 +55,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
 
     // Redux Selectors
-    const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error } = useAppSelector(state => state.groups);
+    const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error, transactions } = useAppSelector(state => state.groups);
     const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
 
     const allMembers = useAppSelector(state => state.finance.members);
@@ -164,7 +167,10 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     }, [dispatch]);
 
     const handleFetchGroupById = useCallback(async (id: string) => {
-        await dispatch(fetchGroupById(id)).unwrap();
+        await Promise.all([
+            dispatch(fetchGroupById(id)).unwrap(),
+            dispatch(fetchTransactions(id)).unwrap()
+        ]);
     }, [dispatch]);
 
     const handleRefreshGroups = useCallback(() => {
@@ -204,6 +210,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 currency,
                 members,
                 expenses,
+                transactions,
                 isLoading,
                 error,
                 fetchGroupById: handleFetchGroupById,

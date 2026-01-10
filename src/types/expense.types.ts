@@ -25,7 +25,6 @@ export interface Expense {
     description: string;
     amount: number;
     currency: string; // Currency code (USD, VND, EUR, etc.)
-    payerId?: string; // Legacy: the single person who paid (to be replaced by payers)
     payers: Payer[]; // The people who paid
     date: string; // ISO date string
     splitType: SplitType;
@@ -51,3 +50,19 @@ export interface Transaction {
     amount: number;
     currency: string; // Currency code for this transaction
 }
+export interface HistoryTransaction {
+    id: string;
+    type: 'EXPENSE' | 'SETTLEMENT';
+    description: string;
+    amount: number;
+    currency: string;
+    date: string;
+    payerId: string;
+    payers: {
+        memberId: string;
+        amount: number;
+        name: string;
+    }[];
+}
+
+export type TransactionHistoryMap = Record<string, HistoryTransaction[]>;

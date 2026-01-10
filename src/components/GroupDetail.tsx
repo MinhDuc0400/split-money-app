@@ -16,6 +16,7 @@ export function GroupDetail() {
     const {
         members,
         expenses,
+        transactions,
         settlements,
         balances,
         deleteExpense,
@@ -141,6 +142,7 @@ export function GroupDetail() {
 
                 <HistoryList
                     expenses={expenses}
+                    transactions={transactions}
                     currency={currency}
                     getMemberName={getMemberName}
                     onEdit={handleEditClick}

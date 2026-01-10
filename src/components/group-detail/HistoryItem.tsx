@@ -2,15 +2,19 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Receipt, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { formatAmount } from '../../lib/currency';
-import { type Expense } from '../../types';
+import { type Expense, type HistoryTransaction, type Payer, type Split } from '../../types/expense.types';
 
 interface HistoryItemProps {
-    expense: Expense;
+    expense: Expense | HistoryTransaction;
     currency: string;
     getMemberName: (id: string) => string;
     onEdit: (id: string) => void;
     onDelete: (id: string) => void;
 }
+
+const isHistoryTransaction = (item: Expense | HistoryTransaction): item is HistoryTransaction => {
+    return 'type' in item;
+};
 
 export const HistoryItem: React.FC<HistoryItemProps> = ({
     expense,
@@ -19,21 +23,32 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({
     onEdit,
     onDelete,
 }) => {
-    const isRepayment = expense.description.toLowerCase().includes('repayment') || expense.description.toLowerCase().includes('settled');
+    const isHistory = isHistoryTransaction(expense);
+    const isRepayment = (isHistory && expense.type === 'SETTLEMENT') ||
+        expense.description.toLowerCase().includes('repayment') ||
+        expense.description.toLowerCase().includes('settled');
 
-    const payerNames = expense.payers?.length > 0
-        ? expense.payers.map(p => getMemberName(p.memberId))
-        : [getMemberName(expense.payerId || '')];
+    const payerNames = expense.payers && expense.payers.length > 0
+        ? expense.payers.map((p: Payer | { name: string; memberId: string }) => ('name' in p ? p.name : getMemberName(p.memberId)))
+        : [getMemberName(isHistory ? expense.payerId : '')];
 
     const displayPayer = payerNames.length > 1
         ? (payerNames.length > 2 ? `${payerNames.slice(0, 2).join(', ')} and ${payerNames.length - 2} more` : payerNames.join(' & '))
         : payerNames[0];
 
     // For regular expenses, we might want to show who it was for
-    const payerIds = new Set(expense.payers?.map(p => p.memberId) || [expense.payerId]);
-    const receivers = expense.splits
-        .filter(s => !payerIds.has(s.memberId) && (s.amount ?? 0) > 0)
-        .map(s => getMemberName(s.memberId));
+    const payerIds = new Set(expense.payers?.map((p: Payer | { memberId: string }) => p.memberId) || (isHistory ? [expense.payerId] : []));
+
+    // Safety check for splits (HistoryTransaction might not have them)
+    const splits = (!isHistory && expense.splits) || [];
+    const receivers = (splits as Split[])
+        .filter((s: Split) => !payerIds.has(s.memberId) && (s.amount ?? 0) > 0)
+        .map((s: Split) => getMemberName(s.memberId));
+
+    // Fallback date handling
+    const displayDate = !isHistory
+        ? new Date(expense.createdAt)
+        : (expense.date ? new Date(expense.date) : new Date());
 
     return (
         <motion.div
@@ -62,7 +77,7 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({
             <div className="flex items-center gap-4">
                 <div className="text-right">
                     <p className="font-bold text-sm">{formatAmount(expense.amount, expense.currency || currency)}</p>
-                    <p className="text-[10px] text-muted-foreground">{new Date(expense.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</p>
+                    <p className="text-[10px] text-muted-foreground">{displayDate.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}</p>
                 </div>
 
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">

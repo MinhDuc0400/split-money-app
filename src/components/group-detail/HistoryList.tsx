@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { HistoryItem } from './HistoryItem';
 import { groupExpensesByMonth } from '../../lib/accounting';
-import type { Expense } from '../../types';
+import type { Expense, TransactionHistoryMap, HistoryTransaction } from '../../types/expense.types';
 
 interface HistoryListProps {
     expenses: Expense[];
+    transactions?: TransactionHistoryMap;
     currency: string;
     getMemberName: (id: string) => string;
     onEdit: (id: string) => void;
@@ -13,15 +14,22 @@ interface HistoryListProps {
 
 export const HistoryList: React.FC<HistoryListProps> = ({
     expenses,
+    transactions,
     currency,
     getMemberName,
     onEdit,
     onDelete,
 }) => {
-    const groupedExpenses = useMemo(() => groupExpensesByMonth(expenses), [expenses]);
-    const months = Object.keys(groupedExpenses);
+    const groupedTransactions = useMemo(() => {
+        if (transactions && Object.keys(transactions).length > 0) {
+            return transactions;
+        }
+        return groupExpensesByMonth(expenses);
+    }, [expenses, transactions]);
 
-    if (expenses.length === 0) {
+    const months = Object.keys(groupedTransactions);
+
+    if (!months.length && expenses.length === 0) {
         return (
             <div className="bg-card rounded-3xl border border-border/50 p-12 text-center">
                 <p className="text-muted-foreground">No history yet. Add an expense to get started!</p>
@@ -37,10 +45,10 @@ export const HistoryList: React.FC<HistoryListProps> = ({
                         {month}
                     </h3>
                     <div className="space-y-2">
-                        {groupedExpenses[month].map((expense) => (
+                        {groupedTransactions[month].map((item: HistoryTransaction | Expense) => (
                             <HistoryItem
-                                key={expense.id}
-                                expense={expense}
+                                key={item.id}
+                                expense={item}
                                 currency={currency}
                                 getMemberName={getMemberName}
                                 onEdit={onEdit}

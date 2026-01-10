@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { GroupMeta, GroupDetail, GroupMember, CreateExpenseRequest, Expense } from '../../types';
+import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
+import type { CreateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants';
 
@@ -8,6 +9,7 @@ interface GroupState {
     activeGroup: GroupDetail | null;
     activeId: string | null;
     isLoading: boolean;
+    transactions: TransactionHistoryMap;
     error: string | null;
 }
 
@@ -16,6 +18,7 @@ const initialState: GroupState = {
     activeGroup: null,
     activeId: null,
     isLoading: false,
+    transactions: {},
     error: null,
 };
 
@@ -25,6 +28,10 @@ export const fetchGroups = createAsyncThunk('groups/fetchAll', async () => {
 
 export const fetchGroupById = createAsyncThunk('groups/fetchById', async (id: string) => {
     return await api.get<GroupDetail>(API_ENDPOINTS.GROUPS.BY_ID(id));
+});
+
+export const fetchTransactions = createAsyncThunk('groups/fetchTransactions', async (groupId: string) => {
+    return await api.get<TransactionHistoryMap>(API_ENDPOINTS.GROUPS.TRANSACTIONS(groupId));
 });
 
 export const createGroup = createAsyncThunk('groups/create', async (data: { name: string; currency: string }) => {
@@ -151,6 +158,19 @@ const groupSlice = createSlice({
             .addCase(createExpense.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to create expense';
+            })
+            // Fetch Transactions
+            .addCase(fetchTransactions.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchTransactions.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.transactions = action.payload;
+            })
+            .addCase(fetchTransactions.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to fetch transactions';
             });
     },
 });
