@@ -5,4 +5,4 @@ export type { Member } from './member.types';
 export * from './expense.types';
 
 // Group types
-export type { GroupData, GroupMeta, GroupDetail, GroupMember } from './group.types';
+export type { GroupData, GroupMeta, GroupDetail, GroupMember, UserBalanceResponse, UserBalanceByCurrency, UserBalanceDetail, SettlementMember, GroupSettlement } from './group.types';

@@ -12,6 +12,8 @@ export const API_ENDPOINTS = {
         JOIN: `${API_BASE_URL}/groups/join`,
         EXPENSES: (id: string) => `${API_BASE_URL}/groups/${id}/expenses`,
         TRANSACTIONS: (id: string) => `${API_BASE_URL}/groups/${id}/transactions`,
+        BALANCE_ME: (id: string) => `${API_BASE_URL}/groups/${id}/balances/me`,
+        SETTLEMENTS: (id: string) => `${API_BASE_URL}/groups/${id}/settlements`,
     },
     EXPENSES: {
         BASE: `${API_BASE_URL}/expenses`,

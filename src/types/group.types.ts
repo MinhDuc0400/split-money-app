@@ -42,3 +42,33 @@ export interface GroupDetail {
         expenses: number;
     };
 }
+
+export interface UserBalanceDetail {
+    memberId: string;
+    name: string;
+    avatarUrl: string;
+    amount: number;
+}
+
+export interface UserBalanceByCurrency {
+    totalOwed: number;
+    totalOwe: number;
+    details: UserBalanceDetail[];
+}
+
+export interface UserBalanceResponse {
+    balances: Record<string, UserBalanceByCurrency>;
+}
+
+export interface SettlementMember {
+    memberId: string;
+    name: string;
+    avatarUrl: string;
+}
+
+export interface GroupSettlement {
+    from: SettlementMember;
+    to: SettlementMember;
+    amount: number;
+    currency: string;
+}

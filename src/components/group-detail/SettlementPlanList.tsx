@@ -1,9 +1,9 @@
 import { motion } from 'framer-motion';
 import { formatAmount } from '../../lib/currency';
-import type { Transaction } from '../../types';
+import type { GroupSettlement } from '../../types/group.types';
 
 interface SettlementPlanListProps {
-    settlements: Transaction[];
+    settlements: GroupSettlement[];
     getMemberName: (id: string) => string;
     getMemberAvatar: (id: string) => string | undefined;
 }
@@ -21,28 +21,34 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                         <p className="text-muted-foreground">No debts found. Everyone is settled up!</p>
                     </div>
                 ) : (
-                    settlements.map((tx, idx) => (
-                        <motion.div
-                            key={`${tx.from}-${tx.to}-${tx.amount}`}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: idx * 0.1 }}
-                            className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary/30 transition-colors"
-                        >
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden">
-                                    <img src={getMemberAvatar(tx.from)} alt="" className="w-full h-full object-cover" />
+                    settlements.map((tx, idx) => {
+                        const fromName = tx.from.name || getMemberName(tx.from.memberId);
+                        const toName = tx.to.name || getMemberName(tx.to.memberId);
+                        const fromAvatar = tx.from.avatarUrl || getMemberAvatar(tx.from.memberId);
+
+                        return (
+                            <motion.div
+                                key={`${tx.from.memberId}-${tx.to.memberId}-${tx.amount}`}
+                                initial={{ opacity: 0, x: -10 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                transition={{ delay: idx * 0.1 }}
+                                className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary/30 transition-colors"
+                            >
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden">
+                                        <img src={fromAvatar} alt="" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div className="text-sm">
+                                        <div className="font-semibold">{fromName}</div>
+                                        <div className="text-muted-foreground text-xs">pays {toName}</div>
+                                    </div>
                                 </div>
-                                <div className="text-sm">
-                                    <div className="font-semibold">{getMemberName(tx.from)}</div>
-                                    <div className="text-muted-foreground text-xs">pays {getMemberName(tx.to)}</div>
+                                <div className="text-right">
+                                    <div className="font-bold text-lg text-primary">{formatAmount(tx.amount, tx.currency)}</div>
                                 </div>
-                            </div>
-                            <div className="text-right">
-                                <div className="font-bold text-lg text-primary">{formatAmount(tx.amount, tx.currency)}</div>
-                            </div>
-                        </motion.div>
-                    ))
+                            </motion.div>
+                        );
+                    })
                 )}
             </div>
         </div>

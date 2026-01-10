@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
 import type { CreateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
+import type { UserBalanceResponse, GroupSettlement } from '../../types/group.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants';
 
@@ -10,6 +11,8 @@ interface GroupState {
     activeId: string | null;
     isLoading: boolean;
     transactions: TransactionHistoryMap;
+    currentUserBalance: UserBalanceResponse | null;
+    serverSettlements: GroupSettlement[];
     error: string | null;
 }
 
@@ -19,6 +22,8 @@ const initialState: GroupState = {
     activeId: null,
     isLoading: false,
     transactions: {},
+    currentUserBalance: null,
+    serverSettlements: [],
     error: null,
 };
 
@@ -32,6 +37,14 @@ export const fetchGroupById = createAsyncThunk('groups/fetchById', async (id: st
 
 export const fetchTransactions = createAsyncThunk('groups/fetchTransactions', async (groupId: string) => {
     return await api.get<TransactionHistoryMap>(API_ENDPOINTS.GROUPS.TRANSACTIONS(groupId));
+});
+
+export const fetchUserBalance = createAsyncThunk('groups/fetchUserBalance', async (groupId: string) => {
+    return await api.get<UserBalanceResponse>(API_ENDPOINTS.GROUPS.BALANCE_ME(groupId));
+});
+
+export const fetchSettlements = createAsyncThunk('groups/fetchSettlements', async (groupId: string) => {
+    return await api.get<GroupSettlement[]>(API_ENDPOINTS.GROUPS.SETTLEMENTS(groupId));
 });
 
 export const createGroup = createAsyncThunk('groups/create', async (data: { name: string; currency: string }) => {
@@ -171,6 +184,32 @@ const groupSlice = createSlice({
             .addCase(fetchTransactions.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to fetch transactions';
+            })
+            // Fetch User Balance
+            .addCase(fetchUserBalance.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchUserBalance.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.currentUserBalance = action.payload;
+            })
+            .addCase(fetchUserBalance.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to fetch user balance';
+            })
+            // Fetch Settlements
+            .addCase(fetchSettlements.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchSettlements.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.serverSettlements = action.payload;
+            })
+            .addCase(fetchSettlements.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to fetch settlements';
             });
     },
 });

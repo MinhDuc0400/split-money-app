@@ -16,7 +16,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
     key: 'root',
     storage,
-    // Add any blacklist/whitelist here if needed
+    blacklist: ['groups', 'finance'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

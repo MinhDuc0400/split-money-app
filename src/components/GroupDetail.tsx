@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
 import { ArrowLeft, Users } from 'lucide-react';
@@ -17,6 +17,8 @@ export function GroupDetail() {
         members,
         expenses,
         transactions,
+        currentUserBalance,
+        serverSettlements,
         settlements,
         balances,
         deleteExpense,
@@ -35,8 +37,26 @@ export function GroupDetail() {
         }
     }, [routeId, fetchGroupById]);
 
-    // Personal balance summary
-    const { owedToYou, youOwe } = useBalanceCalculations({ balances });
+    // Personal balance summary - Fetch from server if available, fallback to local calculation
+    const localBalances = useBalanceCalculations({ balances });
+    const { owedToYou, youOwe } = useMemo(() => {
+        if (currentUserBalance && Object.keys(currentUserBalance.balances).length > 0) {
+            const owed: Array<{ currency: string; amount: number }> = [];
+            const owing: Array<{ currency: string; amount: number }> = [];
+
+            Object.entries(currentUserBalance.balances).forEach(([curr, data]) => {
+                if (data.totalOwed > 0.01) {
+                    owed.push({ currency: curr, amount: data.totalOwed });
+                }
+                if (data.totalOwe > 0.01) {
+                    owing.push({ currency: curr, amount: data.totalOwe });
+                }
+            });
+
+            return { owedToYou: owed, youOwe: owing };
+        }
+        return localBalances;
+    }, [currentUserBalance, localBalances]);
 
     const getMemberName = (id: string) => members.find(m => m.id === id)?.name || 'Unknown';
     const getMemberAvatar = (id: string) => members.find(m => m.id === id)?.avatar;
@@ -58,7 +78,7 @@ export function GroupDetail() {
         description: expenseToEdit.description,
         amount: expenseToEdit.amount,
         currency: expenseToEdit.currency || currency,
-        payerId: expenseToEdit.payerId,
+        payerId: expenseToEdit.payers?.[0]?.memberId,
         payers: expenseToEdit.payers,
         splitType: expenseToEdit.splitType,
         splits: expenseToEdit.splits,
@@ -127,7 +147,12 @@ export function GroupDetail() {
 
                 <div className="space-y-6">
                     <SettlementPlanList
-                        settlements={settlements}
+                        settlements={serverSettlements?.length > 0 ? serverSettlements : settlements.map(s => ({
+                            from: { memberId: s.from, name: '', avatarUrl: '' },
+                            to: { memberId: s.to, name: '', avatarUrl: '' },
+                            amount: s.amount,
+                            currency: s.currency
+                        }))}
                         getMemberName={getMemberName}
                         getMemberAvatar={getMemberAvatar}
                     />
