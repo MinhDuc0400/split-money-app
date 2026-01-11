@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
 import { type Member, type Transaction } from '../types';
-import { type GroupMeta, type GroupDetail, type GroupMember, type UserBalanceResponse, type GroupSettlement } from '../types/group.types';
+import { type GroupMeta, type GroupDetail, type GroupMember, type UserBalanceResponse, type GroupSettlement, type GroupBalancesResponse } from '../types/group.types';
 import { type Expense, type CreateExpenseRequest, type UpdateExpenseRequest, type TransactionHistoryMap } from '../types/expense.types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, fetchTransactions, fetchUserBalance, fetchSettlements
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances
 } from '../store/slices/groupSlice';
 import {
     deleteGroupData
@@ -24,6 +24,7 @@ interface GroupContextType {
     transactions: TransactionHistoryMap;
     currentUserBalance: UserBalanceResponse | null;
     serverSettlements: GroupSettlement[];
+    groupBalances: GroupBalancesResponse | null;
     isLoading: boolean;
     error: string | null;
 
@@ -57,7 +58,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
 
     // Redux Selectors
-    const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error, transactions, currentUserBalance, serverSettlements } = useAppSelector(state => state.groups);
+    const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error, transactions, currentUserBalance, serverSettlements, groupBalances } = useAppSelector(state => state.groups);
     const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
 
     const allMembers = useAppSelector(state => state.finance.members);
@@ -173,7 +174,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
             dispatch(fetchGroupById(id)).unwrap(),
             dispatch(fetchTransactions(id)).unwrap(),
             dispatch(fetchUserBalance(id)).unwrap(),
-            dispatch(fetchSettlements(id)).unwrap()
+            dispatch(fetchSettlements(id)).unwrap(),
+            dispatch(fetchGroupBalances(id)).unwrap()
         ]);
     }, [dispatch]);
 
@@ -217,6 +219,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 transactions,
                 currentUserBalance,
                 serverSettlements,
+                groupBalances,
                 isLoading,
                 error,
                 fetchGroupById: handleFetchGroupById,

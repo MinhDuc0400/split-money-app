@@ -72,3 +72,12 @@ export interface GroupSettlement {
     amount: number;
     currency: string;
 }
+
+export interface MemberBalance {
+    memberId: string;
+    name: string;
+    avatarUrl: string;
+    balance: number;
+}
+
+export type GroupBalancesResponse = Record<string, MemberBalance[]>;

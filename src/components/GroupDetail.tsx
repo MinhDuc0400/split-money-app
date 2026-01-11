@@ -4,13 +4,12 @@ import { useGroup } from '../context/GroupContext';
 import { ArrowLeft, Users } from 'lucide-react';
 import { SplitType, type Expense } from '../types';
 import { SettlementPlanList } from './group-detail/SettlementPlanList';
+import { MemberBalancesList } from './group-detail/MemberBalancesList';
 import { HistoryList } from './group-detail/HistoryList';
 import { EditExpenseModal } from './group-detail/EditExpenseModal';
 import { InvitationBox } from './group-detail/InvitationBox';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
-import { cn } from '../lib/utils';
-import { formatAmount } from '../lib/currency';
 
 export function GroupDetail() {
     const navigate = useNavigate();
@@ -21,6 +20,7 @@ export function GroupDetail() {
         transactions,
         currentUserBalance,
         serverSettlements,
+        groupBalances,
         settlements,
         balances,
         deleteExpense,
@@ -139,49 +139,7 @@ export function GroupDetail() {
                             </div>
                         </div>
 
-                        <div className="bg-card border border-border/50 rounded-3xl overflow-hidden divide-y divide-border/30 shadow-sm">
-                            {members.map((member) => {
-                                // Get this member's balances from the GroupContext `balances` object
-                                const memberCurrencyBalances: Array<{ currency: string; balance: number }> = [];
-                                Object.entries(balances).forEach(([curr, currBalances]) => {
-                                    const bal = currBalances[member.id] || 0;
-                                    if (Math.abs(bal) > 0.01) {
-                                        memberCurrencyBalances.push({ currency: curr, balance: bal });
-                                    }
-                                });
-
-                                return (
-                                    <div key={member.id} className="flex items-center justify-between p-4 hover:bg-secondary/20 transition-colors">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-full ring-2 ring-border/20 bg-secondary overflow-hidden shrink-0">
-                                                <img src={member.avatar} alt={member.name} className="h-full w-full object-cover" />
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-foreground">{member.name}</p>
-                                                {memberCurrencyBalances.length === 0 && (
-                                                    <p className="text-xs text-muted-foreground italic">Settled up</p>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="text-right">
-                                            {memberCurrencyBalances.map(({ currency: curr, balance }) => (
-                                                <div
-                                                    key={curr}
-                                                    className={cn(
-                                                        "text-sm font-bold",
-                                                        balance > 0 ? "text-positive" : "text-negative"
-                                                    )}
-                                                >
-                                                    {balance > 0 ? 'gets back ' : 'owes '}
-                                                    {formatAmount(Math.abs(balance), curr)}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        <MemberBalancesList members={members} serverBalances={groupBalances} />
                     </div>
                 </div>
 

@@ -13,6 +13,7 @@ export const API_ENDPOINTS = {
         EXPENSES: (id: string) => `${API_BASE_URL}/groups/${id}/expenses`,
         TRANSACTIONS: (id: string) => `${API_BASE_URL}/groups/${id}/transactions`,
         BALANCE_ME: (id: string) => `${API_BASE_URL}/groups/${id}/balances/me`,
+        BALANCES: (id: string) => `${API_BASE_URL}/groups/${id}/balances`,
         SETTLEMENTS: (id: string) => `${API_BASE_URL}/groups/${id}/settlements`,
     },
     EXPENSES: {

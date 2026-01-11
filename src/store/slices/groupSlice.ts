@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
 import type { CreateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
-import type { UserBalanceResponse, GroupSettlement } from '../../types/group.types';
+import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse } from '../../types/group.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants';
 
@@ -13,6 +13,7 @@ interface GroupState {
     transactions: TransactionHistoryMap;
     currentUserBalance: UserBalanceResponse | null;
     serverSettlements: GroupSettlement[];
+    groupBalances: GroupBalancesResponse | null;
     error: string | null;
 }
 
@@ -24,6 +25,7 @@ const initialState: GroupState = {
     transactions: {},
     currentUserBalance: null,
     serverSettlements: [],
+    groupBalances: null,
     error: null,
 };
 
@@ -45,6 +47,10 @@ export const fetchUserBalance = createAsyncThunk('groups/fetchUserBalance', asyn
 
 export const fetchSettlements = createAsyncThunk('groups/fetchSettlements', async (groupId: string) => {
     return await api.get<GroupSettlement[]>(API_ENDPOINTS.GROUPS.SETTLEMENTS(groupId));
+});
+
+export const fetchGroupBalances = createAsyncThunk('groups/fetchBalances', async (groupId: string) => {
+    return await api.get<GroupBalancesResponse>(API_ENDPOINTS.GROUPS.BALANCES(groupId));
 });
 
 export const createGroup = createAsyncThunk('groups/create', async (data: { name: string; currency: string }) => {
@@ -210,6 +216,19 @@ const groupSlice = createSlice({
             .addCase(fetchSettlements.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to fetch settlements';
+            })
+            // Fetch Group Balances
+            .addCase(fetchGroupBalances.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(fetchGroupBalances.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.groupBalances = action.payload;
+            })
+            .addCase(fetchGroupBalances.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to fetch group balances';
             });
     },
 });
