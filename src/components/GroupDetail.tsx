@@ -9,6 +9,8 @@ import { EditExpenseModal } from './group-detail/EditExpenseModal';
 import { InvitationBox } from './group-detail/InvitationBox';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
+import { cn } from '../lib/utils';
+import { formatAmount } from '../lib/currency';
 
 export function GroupDetail() {
     const navigate = useNavigate();
@@ -90,62 +92,101 @@ export function GroupDetail() {
     return (
         <div className="space-y-8 pb-12">
             {/* Header */}
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+            <div className="bg-card/50 backdrop-blur-sm sticky top-0 z-30 -mx-4 px-4 py-4 border-b border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => navigate(-1)}
-                        className="p-2 hover:bg-secondary rounded-full transition-colors"
+                        className="p-2 hover:bg-secondary rounded-full transition-colors active:scale-95"
                     >
                         <ArrowLeft className="w-5 h-5" />
                     </button>
                     <div>
-                        <h1 className="text-3xl font-bold">{groupName}</h1>
-                        <div className="flex items-center gap-2 text-muted-foreground mt-1">
-                            <Users className="w-4 h-4" />
-                            <span className="text-sm font-medium">{members.length} members</span>
+                        <h1 className="text-2xl font-black tracking-tight">{groupName}</h1>
+                        <div className="flex items-center gap-2 text-muted-foreground">
+                            <Users className="w-3.5 h-3.5" />
+                            <span className="text-xs font-bold uppercase tracking-wider">{members.length} members</span>
                         </div>
                     </div>
                 </div>
+
+                <div className="flex items-center gap-3 px-2 sm:px-0">
+                    {activeGroup?.inviteCode && (
+                        <InvitationBox inviteCode={activeGroup.inviteCode} />
+                    )}
+                </div>
             </div>
 
-            {/* Balances & Settlement Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-gradient-to-br from-primary/5 via-transparent to-primary/5 rounded-3xl p-6 border border-border/50">
-                        <h3 className="text-lg font-bold mb-6">Your Status</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Main Content Splitwise-style */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Left Column: Balances & Members */}
+                <div className="lg:col-span-8 space-y-8">
+                    {/* Your Balance Summary - Compact */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
                             <BalanceCard type="owed" balances={owedToYou} />
+                        </div>
+                        <div className="flex-1">
                             <BalanceCard type="owing" balances={youOwe} />
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-2 px-2">
+                    {/* Member Balances List (Splitwise style) */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between px-2">
+                            <div className="flex items-center gap-2">
                                 <Users className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold">Members</h3>
-                            </div>
-                            <div className="flex -space-x-2 overflow-hidden px-2">
-                                {members.slice(0, 5).map((member, i) => (
-                                    <div key={member.id} className="inline-block h-10 w-10 rounded-full ring-2 ring-background bg-secondary overflow-hidden" style={{ zIndex: 10 - i }}>
-                                        <img src={member.avatar} alt={member.name} className="h-full w-full object-cover" />
-                                    </div>
-                                ))}
-                                {members.length > 5 && (
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary text-xs font-medium ring-2 ring-background">
-                                        +{members.length - 5}
-                                    </div>
-                                )}
+                                <h3 className="font-bold text-lg">Group Balances</h3>
                             </div>
                         </div>
 
-                        {activeGroup?.inviteCode && (
-                            <InvitationBox inviteCode={activeGroup.inviteCode} />
-                        )}
+                        <div className="bg-card border border-border/50 rounded-3xl overflow-hidden divide-y divide-border/30 shadow-sm">
+                            {members.map((member) => {
+                                // Get this member's balances from the GroupContext `balances` object
+                                const memberCurrencyBalances: Array<{ currency: string; balance: number }> = [];
+                                Object.entries(balances).forEach(([curr, currBalances]) => {
+                                    const bal = currBalances[member.id] || 0;
+                                    if (Math.abs(bal) > 0.01) {
+                                        memberCurrencyBalances.push({ currency: curr, balance: bal });
+                                    }
+                                });
+
+                                return (
+                                    <div key={member.id} className="flex items-center justify-between p-4 hover:bg-secondary/20 transition-colors">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-12 h-12 rounded-full ring-2 ring-border/20 bg-secondary overflow-hidden shrink-0">
+                                                <img src={member.avatar} alt={member.name} className="h-full w-full object-cover" />
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-foreground">{member.name}</p>
+                                                {memberCurrencyBalances.length === 0 && (
+                                                    <p className="text-xs text-muted-foreground italic">Settled up</p>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="text-right">
+                                            {memberCurrencyBalances.map(({ currency: curr, balance }) => (
+                                                <div
+                                                    key={curr}
+                                                    className={cn(
+                                                        "text-sm font-bold",
+                                                        balance > 0 ? "text-positive" : "text-negative"
+                                                    )}
+                                                >
+                                                    {balance > 0 ? 'gets back ' : 'owes '}
+                                                    {formatAmount(Math.abs(balance), curr)}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
 
-                <div className="space-y-6">
+                {/* Right Column: Settlements */}
+                <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
                     <SettlementPlanList
                         settlements={serverSettlements?.length > 0 ? serverSettlements : settlements.map(s => ({
                             from: { memberId: s.from, name: '', avatarUrl: '' },
