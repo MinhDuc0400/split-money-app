@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft } from 'lucide-react';
+import { Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { AppTab } from '../types';
@@ -44,7 +44,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const { activeGroupId, groups, switchGroup } = useGroup();
+    const { groups, switchGroup } = useGroup();
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
@@ -164,9 +164,11 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
 
                 <div className="pt-4 border-t border-border flex items-center justify-between">
                     <ThemeToggle />
-                    <button onClick={onAddExpense} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90">
-                        <PlusCircle className="w-4 h-4" /> Add Expense
-                    </button>
+                    {groups.length > 0 && (
+                        <button onClick={onAddExpense} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90">
+                            <PlusCircle className="w-4 h-4" /> Add Expense
+                        </button>
+                    )}
                 </div>
             </aside>
 
@@ -230,14 +232,16 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
             <nav className="md:hidden fixed bottom-0 w-full bg-card/90 backdrop-blur-lg border-t border-border pb-safe z-20">
                 <div className="flex items-center justify-around px-2 relative py-2">
                     {/* Add Button (Floating-ish) */}
-                    <div className="absolute -top-6 left-1/2 -translate-x-1/2">
-                        <button
-                            onClick={onAddExpense}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-4 shadow-lg shadow-primary/30 transition-transform active:scale-95"
-                        >
-                            <PlusCircle className="w-8 h-8" />
-                        </button>
-                    </div>
+                    {groups.length > 0 && (
+                        <div className="absolute -top-6 left-1/2 -translate-x-1/2">
+                            <button
+                                onClick={onAddExpense}
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full p-4 shadow-lg shadow-primary/30 transition-transform active:scale-95"
+                            >
+                                <PlusCircle className="w-8 h-8" />
+                            </button>
+                        </div>
+                    )}
 
                     <div className="flex-1 flex justify-around pr-8">
                         <NavItem
@@ -251,21 +255,12 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                     <div className="w-12"></div> {/* Spacer for FAB */}
 
                     <div className="flex-1 flex justify-around pl-8">
-                        {activeGroupId ? (
-                            <NavItem
-                                icon={LayoutDashboard}
-                                label="Group"
-                                active={location.pathname.includes('/group/')}
-                                onClick={() => { void navigate(`/group/${activeGroupId}`); }}
-                            />
-                        ) : (
-                            <NavItem
-                                icon={Users}
-                                label="About"
-                                active={false}
-                                onClick={() => { }}
-                            />
-                        )}
+                        <NavItem
+                            icon={Users}
+                            label="Groups"
+                            active={location.pathname.startsWith('/group') || location.pathname.startsWith('/groups')}
+                            onClick={() => { void navigate('/groups'); }}
+                        />
                     </div>
                 </div>
             </nav>

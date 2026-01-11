@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useGroup } from '../context/GroupContext';
 import { calculateSplits } from '../lib/accounting';
 import { SplitType, type Split, type Payer, type CreateExpenseRequest } from '../types';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { AmountInput } from './expense-form/AmountInput';
 import { PayerSelector } from './expense-form/PayerSelector';
 import { MultiPayerSelector } from './expense-form/MultiPayerSelector';
@@ -25,11 +26,34 @@ interface ExpenseFormProps {
         manualAmounts: Record<string, string>;
     };
     onSubmit: (data: CreateExpenseRequest) => void;
+    groupId?: string;
     submitLabel?: string;
 }
 
-export function ExpenseForm({ initialData, onSubmit, submitLabel = 'Add Expense' }: ExpenseFormProps) {
-    const { members, currency: groupCurrency } = useGroup();
+export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add Expense' }: ExpenseFormProps) {
+    const { activeGroupId, groups: groupsMeta, fetchGroupById } = useGroup();
+    const effectiveGroupId = groupId || activeGroupId;
+
+    const dispatch = useAppDispatch();
+    const allMembersMap = useAppSelector(state => state.finance.members);
+
+    // Get members for the specific group
+    const members = useMemo(() => {
+        return allMembersMap[effectiveGroupId] || [];
+    }, [allMembersMap, effectiveGroupId]);
+
+    const groupMeta = useMemo(() => {
+        return groupsMeta.find(g => g.id === effectiveGroupId);
+    }, [groupsMeta, effectiveGroupId]);
+
+    const groupCurrency = groupMeta?.currency || 'USD';
+
+    // Fetch members if they are missing for this group
+    useEffect(() => {
+        if (effectiveGroupId && members.length === 0) {
+            void fetchGroupById(effectiveGroupId);
+        }
+    }, [effectiveGroupId, members.length, fetchGroupById]);
 
     const [description, setDescription] = useState(initialData?.description || '');
     const [amount, setAmount] = useState(initialData?.amount.toString() || '');

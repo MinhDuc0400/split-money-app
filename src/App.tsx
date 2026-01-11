@@ -10,6 +10,7 @@ import { MemberManager } from './components/MemberManager';
 import { AddExpense } from './components/AddExpense';
 import { Login } from './components/auth/Login';
 import { AuthCallback } from './components/auth/AuthCallback';
+import { MobileGroupList } from './components/MobileGroupList';
 import { useSelector } from 'react-redux';
 import type { RootState } from './store';
 
@@ -50,6 +51,7 @@ function AppInner() {
         >
             <Routes>
                 <Route path="/" element={<GlobalDashboard />} />
+                <Route path="/groups" element={<MobileGroupList />} />
                 <Route path="/group/:id" element={<Dashboard />} />
                 <Route path="/group/:id/details" element={<GroupDetail />} />
                 <Route path="/group/:id/members" element={<MemberManager />} />
