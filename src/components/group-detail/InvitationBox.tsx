@@ -20,10 +20,10 @@ export const InvitationBox: React.FC<InvitationBoxProps> = ({ inviteCode }) => {
     };
 
     return (
-        <div className="bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 rounded-3xl p-6 border border-border/50 relative overflow-hidden group">
+        <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-3xl p-6 border border-border/50 relative overflow-hidden group">
             {/* Background Decorative Blurs */}
             <div className="absolute -top-12 -right-12 w-24 h-24 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-colors" />
-            <div className="absolute -bottom-12 -left-12 w-24 h-24 bg-purple-500/20 rounded-full blur-3xl group-hover:bg-purple-500/30 transition-colors" />
+            <div className="absolute -bottom-12 -left-12 w-24 h-24 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-colors" />
 
             <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
@@ -52,7 +52,7 @@ export const InvitationBox: React.FC<InvitationBoxProps> = ({ inviteCode }) => {
                                         animate={{ opacity: 1, scale: 1 }}
                                         exit={{ opacity: 0, scale: 0.5 }}
                                     >
-                                        <Check className="w-5 h-5 text-green-500" />
+                                        <Check className="w-5 h-5 text-positive" />
                                     </motion.div>
                                 ) : (
                                     <motion.div

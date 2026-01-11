@@ -54,7 +54,7 @@ export function Dashboard() {
     return (
         <div className="space-y-8">
             {/* Group Summary Header */}
-            <div className="bg-gradient-to-br from-primary/10 via-purple-500/10 to-primary/5 rounded-2xl p-6 border border-border/50">
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-2xl p-6 border border-border/50">
                 <h2 className="text-2xl font-bold mb-2">{groupName}</h2>
                 <p className="text-muted-foreground text-sm">Quick Summary</p>
             </div>

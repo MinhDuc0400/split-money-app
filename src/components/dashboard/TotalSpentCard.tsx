@@ -22,7 +22,7 @@ export function TotalSpentCard({ expenses, currency }: TotalSpentCardProps) {
                     <p className="text-2xl font-bold text-muted-foreground">--</p>
                 ) : (
                     Object.entries(totalSpentByCurrency).map(([curr, amount]) => (
-                        <p key={curr} className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                        <p key={curr} className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                             {formatAmount(amount, curr)}
                         </p>
                     ))

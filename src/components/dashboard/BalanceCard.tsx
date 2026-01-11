@@ -10,9 +10,9 @@ interface BalanceCardProps {
 
 export function BalanceCard({ type, balances, delay }: BalanceCardProps) {
     const isOwed = type === 'owed';
-    const icon = isOwed ? <TrendingUp className="w-4 h-4 text-green-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />;
+    const icon = isOwed ? <TrendingUp className="w-4 h-4 text-positive" /> : <TrendingDown className="w-4 h-4 text-negative" />;
     const title = isOwed ? 'You Are Owed' : 'You Owe';
-    const colorClass = isOwed ? 'text-green-500' : 'text-red-500';
+    const colorClass = isOwed ? 'text-positive' : 'text-negative';
 
     return (
         <SummaryCard title={title} icon={icon} delay={delay}>

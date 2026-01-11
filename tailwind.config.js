@@ -50,6 +50,15 @@ export default {
                     DEFAULT: "hsl(var(--card))",
                     foreground: "hsl(var(--card-foreground))",
                 },
+                positive: {
+                    DEFAULT: "hsl(var(--positive))",
+                },
+                negative: {
+                    DEFAULT: "hsl(var(--negative))",
+                },
+                warning: {
+                    DEFAULT: "hsl(var(--warning))",
+                },
             },
             borderRadius: {
                 lg: "var(--radius)",

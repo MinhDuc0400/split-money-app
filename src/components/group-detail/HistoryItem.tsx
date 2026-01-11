@@ -58,7 +58,7 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({
             className="group flex items-center justify-between p-4 bg-card hover:bg-secondary/30 rounded-2xl border border-border/50 transition-all"
         >
             <div className="flex items-center gap-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isRepayment ? 'bg-green-500/10 text-green-500' : 'bg-primary/10 text-primary'}`}>
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isRepayment ? 'bg-positive/10 text-positive' : 'bg-primary/10 text-primary'}`}>
                     {isRepayment ? <ArrowRight className="w-5 h-5" /> : <Receipt className="w-5 h-5" />}
                 </div>
 

@@ -120,7 +120,7 @@ export function GroupSelector({ className }: { className?: string }) {
                                                             ))}
                                                         </select>
                                                         <div className="flex gap-1 justify-end">
-                                                            <button onClick={handleSaveEdit} className="p-1 text-green-500 hover:bg-green-500/10 rounded">
+                                                            <button onClick={handleSaveEdit} className="p-1 text-positive hover:bg-positive/10 rounded">
                                                                 <Check className="w-3 h-3" />
                                                             </button>
                                                             <button onClick={handleCancelEdit} className="p-1 text-muted-foreground hover:bg-secondary rounded">

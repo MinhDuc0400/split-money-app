@@ -100,9 +100,9 @@ export const GroupActionModal: React.FC<GroupActionModalProps> = ({ isOpen, onCl
 
                                     <button
                                         onClick={() => setMode('join')}
-                                        className="flex items-center gap-4 p-4 bg-purple-500/10 border border-purple-500/20 rounded-2xl hover:bg-purple-500/20 transition-all text-left"
+                                        className="flex items-center gap-4 p-4 bg-primary/10 border border-primary/20 rounded-2xl hover:bg-primary/20 transition-all text-left"
                                     >
-                                        <div className="w-12 h-12 bg-purple-500 rounded-xl flex items-center justify-center text-white">
+                                        <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-white">
                                             <Hash className="w-6 h-6" />
                                         </div>
                                         <div>
@@ -183,7 +183,7 @@ export const GroupActionModal: React.FC<GroupActionModalProps> = ({ isOpen, onCl
                                         <button
                                             type="submit"
                                             disabled={!inviteCode.trim() || isLoading}
-                                            className="flex-1 py-3 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-all disabled:opacity-50"
+                                            className="flex-1 py-3 bg-primary text-primary-foreground hover:bg-primary/90 rounded-xl transition-all disabled:opacity-50 font-bold"
                                         >
                                             {isLoading ? 'Joining...' : 'Join Group'}
                                         </button>

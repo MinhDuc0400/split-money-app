@@ -31,7 +31,7 @@ export const WelcomeView: React.FC = () => {
                 <div className="w-20 h-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto mb-6">
                     <Zap className="w-10 h-10 text-primary" />
                 </div>
-                <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                     Welcome to SplitMoney
                 </h1>
                 <p className="text-xl text-muted-foreground">
@@ -67,14 +67,14 @@ export const WelcomeView: React.FC = () => {
                     onClick={() => setIsJoining(true)}
                     className="group relative bg-card hover:bg-secondary/30 border border-border rounded-3xl p-8 text-left transition-all shadow-lg hover:shadow-primary/5"
                 >
-                    <div className="w-14 h-14 rounded-2xl bg-purple-500 flex items-center justify-center mb-6 shadow-lg shadow-purple-500/20">
+                    <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg shadow-primary/20">
                         <Hash className="w-8 h-8 text-white" />
                     </div>
                     <h3 className="text-2xl font-bold mb-2">Join Existing Group</h3>
                     <p className="text-muted-foreground mb-6">
                         Joining a group created by someone else? Enter the invitation code they sent you.
                     </p>
-                    <div className="flex items-center text-purple-500 font-bold gap-2">
+                    <div className="flex items-center text-primary font-bold gap-2">
                         Enter Code <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.button>

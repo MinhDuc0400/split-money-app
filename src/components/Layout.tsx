@@ -58,7 +58,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
             {/* Header / Sidebar for Desktop */}
             <aside className="hidden md:flex flex-col w-64 border-r border-border bg-card/80 backdrop-blur-md p-4 sticky top-0 h-screen">
                 <div className="flex items-center justify-between mb-8">
-                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
                         SplitMoney
                     </h1>
                     {isAuthenticated && user ? (
@@ -178,7 +178,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                 {/* Mobile Header */}
                 <header className="md:hidden px-4 py-3 flex items-center justify-between bg-card/80 backdrop-blur-md sticky top-0 z-10 border-b border-border">
                     <div className="flex items-center gap-1">
-                        <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent mr-2">
+                        <h1 className="text-lg font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent mr-2">
                             SplitMoney
                         </h1>
                     </div>

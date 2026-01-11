@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
 import { removeThousandsSeparator, formatAmount } from '../../lib/currency';
-import type {Member, Split} from '../../types';
+import type { Member, Split } from '../../types';
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
@@ -75,7 +75,7 @@ export function MultiPayerSelector({ members, payers, setPayers, totalAmount, cu
                 <span>Who Paid?</span>
                 <span className={cn(
                     "font-bold",
-                    Math.abs(remaining) < 0.01 ? "text-green-500" : "text-amber-500"
+                    Math.abs(remaining) < 0.01 ? "text-positive" : "text-amber-500"
                 )}>
                     {Math.abs(remaining) < 0.01
                         ? "Balanced"

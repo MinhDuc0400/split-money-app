@@ -24,7 +24,7 @@ export function RemoveConfirmDialog({ isOpen, memberName, balances, onConfirm, o
                         className="bg-card w-full max-w-sm rounded-xl p-6 relative z-10 shadow-xl border border-border"
                     >
                         <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                            <AlertTriangle className="w-5 h-5 text-yellow-500" />
+                            <AlertTriangle className="w-5 h-5 text-warning" />
                             Unsettled Balance
                         </h3>
                         <p className="text-sm text-muted-foreground mb-2">
@@ -32,7 +32,7 @@ export function RemoveConfirmDialog({ isOpen, memberName, balances, onConfirm, o
                         </p>
                         <div className="mb-4 space-y-1">
                             {balances.map(({ currency, balance }) => (
-                                <div key={currency} className={cn("text-sm font-bold", balance > 0 ? "text-green-500" : "text-red-500")}>
+                                <div key={currency} className={cn("text-sm font-bold", balance > 0 ? "text-positive" : "text-negative")}>
                                     {balance > 0 ? '+' : ''}{formatAmount(Math.abs(balance), currency)}
                                 </div>
                             ))}

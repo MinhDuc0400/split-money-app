@@ -60,7 +60,7 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove }: Mem
                             if (e.key === 'Escape') handleCancelEdit();
                         }}
                     />
-                    <button onClick={handleSaveEdit} className="p-1 text-green-500 hover:bg-green-500/10 rounded">
+                    <button onClick={handleSaveEdit} className="p-1 text-positive hover:bg-positive/10 rounded">
                         <Check className="w-4 h-4" />
                     </button>
                     <button onClick={handleCancelEdit} className="p-1 text-muted-foreground hover:bg-secondary rounded">
@@ -90,7 +90,7 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove }: Mem
                         {/* Show balance hints for all currencies if non-zero */}
                         <div className="flex flex-col items-end gap-0.5">
                             {memberBalances.map(({ currency, balance }) => (
-                                <span key={currency} className={cn("text-xs font-medium", balance > 0 ? "text-green-500" : "text-red-500")}>
+                                <span key={currency} className={cn("text-xs font-medium", balance > 0 ? "text-positive" : "text-negative")}>
                                     {balance > 0 ? '+' : ''}{formatAmount(Math.abs(balance), currency)}
                                 </span>
                             ))}

@@ -99,6 +99,21 @@ const financeSlice = createSlice({
             delete state.expenses[groupId];
         }
     },
+    extraReducers: (builder) => {
+        // We import these thunks from groupSlice, but to avoid circular dependencies 
+        // if any exist, we can use the string action types or ensure groupSlice doesn't import financeSlice.
+        // For now, we'll assume direct import is fine as they are sibling slices.
+        builder.addCase('groups/fetchById/fulfilled', (state, action: any) => {
+            const group = action.payload;
+            if (group && group.members) {
+                state.members[group.id] = group.members.map((m: any) => ({
+                    id: m.id,
+                    name: m.name,
+                    avatar: m.avatarUrl
+                }));
+            }
+        });
+    }
 });
 
 export const {

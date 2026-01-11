@@ -31,7 +31,7 @@ interface ExpenseFormProps {
 }
 
 export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add Expense' }: ExpenseFormProps) {
-    const { activeGroupId, groups: groupsMeta, fetchGroupById } = useGroup();
+    const { activeGroupId, groups: groupsMeta, fetchGroupById, isLoading } = useGroup();
     const effectiveGroupId = groupId || activeGroupId;
 
     const dispatch = useAppDispatch();
@@ -216,10 +216,19 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
         });
     };
 
+    if (isLoading && members.length === 0) {
+        return (
+            <div className="p-12 flex flex-col items-center justify-center">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+                <p className="text-sm text-muted-foreground animate-pulse">Loading members...</p>
+            </div>
+        );
+    }
+
     if (members.length === 0) {
         return (
             <div className="p-6 text-center">
-                <p className="text-muted-foreground mb-4">Add members before creating an expense.</p>
+                <p className="text-muted-foreground mb-4">No members found in this group. Please add members first.</p>
             </div>
         );
     }

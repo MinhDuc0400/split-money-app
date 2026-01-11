@@ -45,7 +45,7 @@ export function MemberBalancesList({ members, balances }: MemberBalancesListProp
                                 <div className="text-right">
                                     {memberBalances.length > 0 ? (
                                         memberBalances.map(({ currency: curr, balance }) => (
-                                            <div key={curr} className={cn("font-bold", balance > 0 ? "text-green-500" : "text-red-500")}>
+                                            <div key={curr} className={cn("font-bold", balance > 0 ? "text-positive" : "text-negative")}>
                                                 {balance > 0 ? 'Gets back ' : 'Owes '}
                                                 {formatAmount(Math.abs(balance), curr)}
                                             </div>

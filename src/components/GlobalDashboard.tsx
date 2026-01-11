@@ -28,7 +28,7 @@ export const GlobalDashboard: React.FC = () => {
     return (
         <div className="space-y-8 pb-12">
             {/* Aggregate Summary */}
-            <div className="bg-gradient-to-br from-primary/10 via-purple-500/10 to-primary/5 rounded-3xl p-8 border border-border/50">
+            <div className="bg-gradient-to-br from-primary/10 via-primary/5 to-background rounded-3xl p-8 border border-border/50">
                 <h1 className="text-3xl font-bold mb-2">Overall Summary</h1>
                 <p className="text-muted-foreground">Combined status across {groups.length} group{groups.length > 1 ? 's' : ''}</p>
 
