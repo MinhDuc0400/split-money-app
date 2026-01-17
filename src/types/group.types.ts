@@ -82,3 +82,11 @@ export interface MemberBalance {
 }
 
 export type GroupBalancesResponse = Record<string, MemberBalance[]>;
+
+export interface CreateSettlementRequest {
+    fromId: string;
+    toId: string;
+    amount: number;
+    currency: string;
+    note?: string;
+}

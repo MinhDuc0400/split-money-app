@@ -30,6 +30,7 @@ export interface Expense {
     splitType: SplitType;
     splits: Split[]; // Breakdown of who owes what
     createdAt: number;
+    payerId?: string; // Legacy support
 }
 
 export interface CreateExpenseRequest {

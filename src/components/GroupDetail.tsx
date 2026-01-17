@@ -8,9 +8,12 @@ import { MemberBalancesList } from './group-detail/MemberBalancesList';
 import { HistoryList } from './group-detail/HistoryList';
 import { EditExpenseModal } from './group-detail/EditExpenseModal';
 import { DeleteConfirmationModal } from './group-detail/DeleteConfirmationModal';
+import { SettleUpModal } from './group-detail/SettleUpModal';
 import { InvitationBox } from './group-detail/InvitationBox';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
+import { useAppSelector } from '../store/hooks';
+import { type GroupSettlement } from '../types/group.types';
 
 export function GroupDetail() {
     const navigate = useNavigate();
@@ -29,11 +32,15 @@ export function GroupDetail() {
         currency,
         groupName,
         activeGroup,
-        fetchGroupById
+        fetchGroupById,
+        settleUp
     } = useGroup();
+    const authUser = useAppSelector(state => state.auth.user);
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
     const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
+    const [settlingPayment, setSettlingPayment] = useState<GroupSettlement | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isSettling, setIsSettling] = useState(false);
 
     // Fetch group details on mount or ID change
     useEffect(() => {
@@ -66,6 +73,11 @@ export function GroupDetail() {
     const getMemberName = (id: string) => members.find(m => m.id === id)?.name || 'Unknown';
     const getMemberAvatar = (id: string) => members.find(m => m.id === id)?.avatar;
 
+    const currentUserMember = useMemo(() => {
+        if (!authUser || !members.length) return null;
+        return members.find(m => m.userId === authUser.id);
+    }, [authUser, members]);
+
     const handleEditClick = (id: string) => {
         setEditingExpenseId(id);
     };
@@ -82,6 +94,28 @@ export function GroupDetail() {
                 setDeletingExpenseId(null);
             } finally {
                 setIsDeleting(false);
+            }
+        }
+    };
+
+    const handleSettleClick = (settlement: GroupSettlement) => {
+        setSettlingPayment(settlement);
+    };
+
+    const handleConfirmSettle = async (amount: number, note: string) => {
+        if (settlingPayment) {
+            setIsSettling(true);
+            try {
+                await settleUp({
+                    fromId: settlingPayment.from.memberId,
+                    toId: settlingPayment.to.memberId,
+                    amount,
+                    currency: settlingPayment.currency,
+                    note
+                });
+                setSettlingPayment(null);
+            } finally {
+                setIsSettling(false);
             }
         }
     };
@@ -186,6 +220,8 @@ export function GroupDetail() {
                         }))}
                         getMemberName={getMemberName}
                         getMemberAvatar={getMemberAvatar}
+                        onSettle={handleSettleClick}
+                        currentMemberId={currentUserMember?.id}
                     />
                 </div>
             </div>
@@ -220,6 +256,25 @@ export function GroupDetail() {
                 onConfirm={handleConfirmDelete}
                 isLoading={isDeleting}
             />
+
+            {settlingPayment && (
+                <SettleUpModal
+                    isOpen={!!settlingPayment}
+                    onClose={() => setSettlingPayment(null)}
+                    onConfirm={handleConfirmSettle}
+                    fromMember={{
+                        name: getMemberName(settlingPayment.from.memberId),
+                        avatar: getMemberAvatar(settlingPayment.from.memberId)
+                    }}
+                    toMember={{
+                        name: getMemberName(settlingPayment.to.memberId),
+                        avatar: getMemberAvatar(settlingPayment.to.memberId)
+                    }}
+                    amount={settlingPayment.amount}
+                    currency={settlingPayment.currency}
+                    isLoading={isSettling}
+                />
+            )}
         </div>
     );
 }

@@ -1,13 +1,13 @@
 import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
 import { type Member, type Transaction } from '../types';
-import { type GroupMeta, type GroupDetail, type GroupMember, type UserBalanceResponse, type GroupSettlement, type GroupBalancesResponse } from '../types/group.types';
+import { type GroupMeta, type GroupDetail, type GroupMember, type UserBalanceResponse, type GroupSettlement, type GroupBalancesResponse, type CreateSettlementRequest } from '../types/group.types';
 import { type Expense, type CreateExpenseRequest, type UpdateExpenseRequest, type TransactionHistoryMap } from '../types/expense.types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement
 } from '../store/slices/groupSlice';
 import {
     deleteGroupData
@@ -37,6 +37,7 @@ interface GroupContextType {
     addExpense: (data: CreateExpenseRequest) => Promise<void>;
     updateExpense: (id: string, expenseData: UpdateExpenseRequest) => void;
     deleteExpense: (id: string) => void;
+    settleUp: (data: CreateSettlementRequest) => Promise<void>;
     balances: Record<string, Record<string, number>>; // currency -> memberId -> balance
     settlements: Transaction[];
 
@@ -49,6 +50,7 @@ interface GroupContextType {
     joinGroup: (code: string) => Promise<GroupMember>;
     refreshGroups: () => void;
     overallBalances: Record<string, Record<string, number>>; // Aggregate: currency -> memberId -> balance
+    resetGroup: () => void;
 }
 
 const GroupContext = createContext<GroupContextType | undefined>(undefined);
@@ -69,7 +71,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
             return activeGroup.members.map(m => ({
                 id: m.id,
                 name: m.name,
-                avatar: m.avatarUrl
+                avatar: m.avatarUrl,
+                userId: m.userId
             }));
         }
         return allMembers[activeGroupId || ''] || [];
@@ -143,6 +146,13 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         await handleFetchGroupById(activeGroupId);
     };
 
+    const handleSettleUp = async (data: CreateSettlementRequest) => {
+        if (!activeGroupId) return;
+        await dispatch(createSettlement({ groupId: activeGroupId, data })).unwrap();
+        // Refresh everything to ensure consistency
+        await handleFetchGroupById(activeGroupId);
+    };
+
     // --- Group Management ---
     const handleCreateGroup = async (name: string, currency: string) => {
         const newGroup = await dispatch(createGroup({ name, currency })).unwrap();
@@ -183,6 +193,11 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const handleRefreshGroups = useCallback(() => {
         void dispatch(fetchGroups());
     }, [dispatch]);
+
+    const handleResetGroup = () => {
+        localStorage.clear();
+        window.location.href = '/';
+    };
 
     // Derived calculations
     const balances = useMemo(() => calculateBalances(members, expenses), [members, expenses]);
@@ -231,6 +246,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 addExpense: handleAddExpense,
                 updateExpense: handleUpdateExpense,
                 deleteExpense: handleDeleteExpense,
+                settleUp: handleSettleUp,
                 balances,
                 settlements,
                 groups,
@@ -240,7 +256,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 deleteGroup: handleDeleteGroup,
                 joinGroup: handleJoinGroup,
                 refreshGroups: handleRefreshGroups,
-                overallBalances
+                overallBalances,
+                resetGroup: handleResetGroup
             }}
         >
             {children}

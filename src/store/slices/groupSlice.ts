@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
 import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
-import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse } from '../../types/group.types';
+import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest } from '../../types/group.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants';
 
@@ -92,6 +92,13 @@ export const deleteExpense = createAsyncThunk(
     async ({ groupId, expenseId }: { groupId: string; expenseId: string }) => {
         await api.delete(API_ENDPOINTS.GROUPS.EXPENSE_BY_ID(groupId, expenseId));
         return { groupId, expenseId };
+    }
+);
+
+export const createSettlement = createAsyncThunk(
+    'groups/createSettlement',
+    async ({ groupId, data }: { groupId: string; data: CreateSettlementRequest }) => {
+        return await api.post<GroupSettlement>(API_ENDPOINTS.GROUPS.SETTLEMENTS(groupId), data);
     }
 );
 
@@ -294,6 +301,19 @@ const groupSlice = createSlice({
             .addCase(fetchGroupBalances.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to fetch group balances';
+            })
+            // Create Settlement
+            .addCase(createSettlement.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(createSettlement.fulfilled, (state, action) => {
+                state.isLoading = false;
+                state.serverSettlements.push(action.payload);
+            })
+            .addCase(createSettlement.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to create settlement';
             });
     },
 });

@@ -6,9 +6,11 @@ interface SettlementPlanListProps {
     settlements: GroupSettlement[];
     getMemberName: (id: string) => string;
     getMemberAvatar: (id: string) => string | undefined;
+    onSettle?: (settlement: GroupSettlement) => void;
+    currentMemberId?: string;
 }
 
-export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar }: SettlementPlanListProps) {
+export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar, onSettle, currentMemberId }: SettlementPlanListProps) {
     return (
         <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
@@ -43,8 +45,16 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                                         <div className="text-muted-foreground text-xs">pays {toName}</div>
                                     </div>
                                 </div>
-                                <div className="text-right">
+                                <div className="flex flex-col items-end gap-2">
                                     <div className="font-bold text-lg text-primary">{formatAmount(tx.amount, tx.currency)}</div>
+                                    {onSettle && currentMemberId === tx.from.memberId && (
+                                        <button
+                                            onClick={() => onSettle(tx)}
+                                            className="px-3 py-1 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-full text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                                        >
+                                            Settle
+                                        </button>
+                                    )}
                                 </div>
                             </motion.div>
                         );
