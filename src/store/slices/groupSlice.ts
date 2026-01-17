@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
-import type { CreateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
+import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
 import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse } from '../../types/group.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants';
@@ -77,6 +77,21 @@ export const createExpense = createAsyncThunk(
     'groups/createExpense',
     async ({ groupId, data }: { groupId: string; data: CreateExpenseRequest }) => {
         return await api.post<Expense>(API_ENDPOINTS.GROUPS.EXPENSES(groupId), data);
+    }
+);
+
+export const updateExpense = createAsyncThunk(
+    'groups/updateExpense',
+    async ({ groupId, expenseId, data }: { groupId: string; expenseId: string; data: UpdateExpenseRequest }) => {
+        return await api.patch<Expense>(API_ENDPOINTS.GROUPS.EXPENSE_BY_ID(groupId, expenseId), data);
+    }
+);
+
+export const deleteExpense = createAsyncThunk(
+    'groups/deleteExpense',
+    async ({ groupId, expenseId }: { groupId: string; expenseId: string }) => {
+        await api.delete(API_ENDPOINTS.GROUPS.EXPENSE_BY_ID(groupId, expenseId));
+        return { groupId, expenseId };
     }
 );
 
@@ -177,6 +192,56 @@ const groupSlice = createSlice({
             .addCase(createExpense.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to create expense';
+            })
+            // Update Expense
+            .addCase(updateExpense.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(updateExpense.fulfilled, (state, action) => {
+                state.isLoading = false;
+                // Update the transaction in the history map if it exists
+                const { groupId } = action.meta.arg;
+                const updatedExpense = action.payload;
+                if (state.transactions[groupId]) {
+                    const index = state.transactions[groupId].findIndex(t => t.id === updatedExpense.id);
+                    if (index !== -1) {
+                        // Note: HistoryTransaction might have a slightly different structure than Expense
+                        // But for now let's assume we need to refresh or if they match, update it.
+                        // Actually, HistoryTransaction has 'payers' with 'name', which 'Expense' might not have in the same way.
+                        // It's safer to just clear or mark for refresh, but let's try to update the basic fields.
+                        state.transactions[groupId][index] = {
+                            ...state.transactions[groupId][index],
+                            description: updatedExpense.description,
+                            amount: updatedExpense.amount,
+                            currency: updatedExpense.currency,
+                            date: updatedExpense.date,
+                        };
+                    }
+                }
+            })
+            .addCase(updateExpense.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to update expense';
+            })
+            // Delete Expense
+            .addCase(deleteExpense.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(deleteExpense.fulfilled, (state, action) => {
+                state.isLoading = false;
+                const { groupId, expenseId } = action.payload;
+                if (state.transactions[groupId]) {
+                    state.transactions[groupId] = state.transactions[groupId].filter(t => t.id !== expenseId);
+                }
+                if (state.activeGroup && state.activeGroup.id === groupId) {
+                    state.activeGroup._count.expenses = Math.max(0, state.activeGroup._count.expenses - 1);
+                }
+            })
+            .addCase(deleteExpense.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to delete expense';
             })
             // Fetch Transactions
             .addCase(fetchTransactions.pending, (state) => {

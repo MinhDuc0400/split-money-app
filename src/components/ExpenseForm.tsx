@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGroup } from '../context/GroupContext';
 import { calculateSplits } from '../lib/accounting';
-import { SplitType, type Split, type Payer, type CreateExpenseRequest } from '../types';
-import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { SplitType, type Split, type Payer, type CreateExpenseRequest } from '../types/expense.types';
+import { useAppSelector } from '../store/hooks';
 import { AmountInput } from './expense-form/AmountInput';
 import { PayerSelector } from './expense-form/PayerSelector';
 import { MultiPayerSelector } from './expense-form/MultiPayerSelector';
@@ -34,7 +34,6 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
     const { activeGroupId, groups: groupsMeta, fetchGroupById, isLoading } = useGroup();
     const effectiveGroupId = groupId || activeGroupId;
 
-    const dispatch = useAppDispatch();
     const allMembersMap = useAppSelector(state => state.finance.members);
 
     // Get members for the specific group
@@ -73,9 +72,31 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
     // Exact amounts: Record<MemberID, AmountString>
     const [manualAmounts, setManualAmounts] = useState<Record<string, string>>(initialData?.manualAmounts || {});
     // Percentages per member (as string to keep input fidelity)
-    const [percentages, setPercentages] = useState<Record<string, string>>({});
+    const [percentages, setPercentages] = useState<Record<string, string>>(() => {
+        if (initialData?.splitType === SplitType.PERCENTAGE && Array.isArray(initialData.splits)) {
+            const obj: Record<string, string> = {};
+            initialData.splits.forEach(s => {
+                if (s.percentage !== undefined) {
+                    obj[s.memberId] = s.percentage.toString();
+                }
+            });
+            return obj;
+        }
+        return {};
+    });
     // Shares per member (as string to allow empty state, but will be validated as integers)
-    const [shares, setShares] = useState<Record<string, string>>({});
+    const [shares, setShares] = useState<Record<string, string>>(() => {
+        if (initialData?.splitType === SplitType.SHARES && Array.isArray(initialData.splits)) {
+            const obj: Record<string, string> = {};
+            initialData.splits.forEach(s => {
+                if (s.share !== undefined) {
+                    obj[s.memberId] = s.share.toString();
+                }
+            });
+            return obj;
+        }
+        return {};
+    });
     // Included members for Equal split (checkboxes)
     const [included, setIncluded] = useState<Record<string, boolean>>(() => {
         // If editing an equal-split expense, preselect members present in splits with amount > 0

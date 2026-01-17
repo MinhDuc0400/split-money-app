@@ -63,6 +63,8 @@ export interface HistoryTransaction {
         amount: number;
         name: string;
     }[];
+    splitType?: SplitType;
+    splits?: Split[];
 }
 
 export type TransactionHistoryMap = Record<string, HistoryTransaction[]>;

@@ -2,11 +2,12 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
 import { ArrowLeft, Users } from 'lucide-react';
-import { SplitType, type Expense } from '../types';
+import { SplitType, type Expense, type Split } from '../types';
 import { SettlementPlanList } from './group-detail/SettlementPlanList';
 import { MemberBalancesList } from './group-detail/MemberBalancesList';
 import { HistoryList } from './group-detail/HistoryList';
 import { EditExpenseModal } from './group-detail/EditExpenseModal';
+import { DeleteConfirmationModal } from './group-detail/DeleteConfirmationModal';
 import { InvitationBox } from './group-detail/InvitationBox';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
@@ -31,6 +32,8 @@ export function GroupDetail() {
         fetchGroupById
     } = useGroup();
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
+    const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     // Fetch group details on mount or ID change
     useEffect(() => {
@@ -67,27 +70,56 @@ export function GroupDetail() {
         setEditingExpenseId(id);
     };
 
-    const handleUpdateExpense = (data: Omit<Expense, 'id' | 'createdAt'>) => {
+    const handleDeleteClick = (id: string) => {
+        setDeletingExpenseId(id);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (deletingExpenseId) {
+            setIsDeleting(true);
+            try {
+                await deleteExpense(deletingExpenseId);
+                setDeletingExpenseId(null);
+            } finally {
+                setIsDeleting(false);
+            }
+        }
+    };
+
+    const handleUpdateExpense = async (data: Omit<Expense, 'id' | 'createdAt'>) => {
         if (editingExpenseId) {
-            updateExpense(editingExpenseId, data);
+            await updateExpense(editingExpenseId, data);
             setEditingExpenseId(null);
         }
     };
 
-    const expenseToEdit = expenses.find(e => e.id === editingExpenseId);
+    const expenseToEdit = useMemo(() => {
+        if (!editingExpenseId || !activeGroup?.expenses) return undefined;
+        return activeGroup.expenses.find(e => e.id === editingExpenseId);
+    }, [activeGroup?.expenses, editingExpenseId]);
 
-    const initialFormData = expenseToEdit ? {
-        description: expenseToEdit.description,
-        amount: expenseToEdit.amount,
-        currency: expenseToEdit.currency || currency,
-        payerId: expenseToEdit.payers?.[0]?.memberId,
-        payers: expenseToEdit.payers,
-        splitType: expenseToEdit.splitType,
-        splits: expenseToEdit.splits,
-        manualAmounts: expenseToEdit.splitType === SplitType.EXACT
-            ? expenseToEdit.splits.reduce<Record<string, string>>((acc, s) => ({ ...acc, [s.memberId]: (s.amount ?? 0).toString() }), {})
-            : {}
-    } : undefined;
+    const initialFormData = useMemo(() => {
+        if (!expenseToEdit) return undefined;
+
+
+        const isHistory = 'type' in expenseToEdit;
+        const payers = 'payers' in expenseToEdit ? expenseToEdit.payers : [];
+        const splitType = 'splitType' in expenseToEdit ? (expenseToEdit.splitType as SplitType) : SplitType.EVEN;
+        const splits = 'splits' in expenseToEdit ? (expenseToEdit.splits as Split[]) : [];
+
+        return {
+            description: expenseToEdit.description,
+            amount: expenseToEdit.amount,
+            currency: (expenseToEdit as any).currency || currency,
+            payerId: payers.length > 0 ? (payers[0] as any).memberId : (isHistory ? (expenseToEdit as any).payerId : undefined),
+            payers: payers as any[],
+            splitType,
+            splits,
+            manualAmounts: splitType === SplitType.EXACT
+                ? splits.reduce<Record<string, string>>((acc, s) => ({ ...acc, [s.memberId]: (s.amount ?? 0).toString() }), {})
+                : {}
+        };
+    }, [expenseToEdit, currency]);
 
     return (
         <div className="space-y-8 pb-12">
@@ -170,7 +202,7 @@ export function GroupDetail() {
                     currency={currency}
                     getMemberName={getMemberName}
                     onEdit={handleEditClick}
-                    onDelete={deleteExpense}
+                    onDelete={handleDeleteClick}
                 />
             </div>
 
@@ -180,6 +212,13 @@ export function GroupDetail() {
                 initialData={initialFormData}
                 onClose={() => { setEditingExpenseId(null); }}
                 onSubmit={handleUpdateExpense}
+            />
+
+            <DeleteConfirmationModal
+                isOpen={!!deletingExpenseId}
+                onClose={() => setDeletingExpenseId(null)}
+                onConfirm={handleConfirmDelete}
+                isLoading={isDeleting}
             />
         </div>
     );

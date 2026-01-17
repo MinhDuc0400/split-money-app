@@ -38,6 +38,7 @@ export interface GroupDetail {
     updatedAt: string;
     deletedAt: string | null;
     members: GroupMember[];
+    expenses: Expense[];
     _count: {
         expenses: number;
     };

@@ -7,7 +7,7 @@ import { calculateBalances, calculateSettlements } from '../lib/accounting';
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances
 } from '../store/slices/groupSlice';
 import {
     deleteGroupData
@@ -127,16 +127,18 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         void dispatch(fetchGroupById(activeGroupId));
     };
 
-    const handleUpdateExpense = (id: string, expenseData: UpdateExpenseRequest) => {
+    const handleUpdateExpense = async (id: string, expenseData: UpdateExpenseRequest) => {
         if (!activeGroupId) return;
-        // TODO: Move to API
-        dispatch({ type: 'finance/updateExpense', payload: { groupId: activeGroupId, expenseId: id, data: expenseData } });
+        await dispatch(updateExpense({ groupId: activeGroupId, expenseId: id, data: expenseData })).unwrap();
+        // Refresh everything to ensure consistency
+        await handleFetchGroupById(activeGroupId);
     };
 
-    const handleDeleteExpense = (id: string) => {
+    const handleDeleteExpense = async (id: string) => {
         if (!activeGroupId) return;
-        // TODO: Move to API
-        dispatch({ type: 'finance/deleteExpense', payload: { groupId: activeGroupId, expenseId: id } });
+        await dispatch(deleteExpense({ groupId: activeGroupId, expenseId: id })).unwrap();
+        // Refresh everything to ensure consistency
+        await handleFetchGroupById(activeGroupId);
     };
 
     const resetGroup = () => {
