@@ -39,7 +39,6 @@ interface GroupContextType {
     deleteExpense: (id: string) => void;
     balances: Record<string, Record<string, number>>; // currency -> memberId -> balance
     settlements: Transaction[];
-    resetGroup: () => void; // Deprecated or re-implement
 
     // Multi-Group Management
     groups: GroupMeta[];
@@ -76,7 +75,10 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         return allMembers[activeGroupId || ''] || [];
     }, [allMembers, activeGroupId, activeGroup]);
 
-    const expenses = useMemo(() => allExpenses[activeGroupId || ''] || [], [allExpenses, activeGroupId]);
+    const expenses = useMemo(() => {
+        if (activeGroup?.expenses) return activeGroup.expenses;
+        return allExpenses[activeGroupId || ''] || [];
+    }, [activeGroup, allExpenses, activeGroupId]);
 
     const currentGroupMeta = groups.find(g => g.id === activeGroupId);
     const groupName = activeGroup?.name || currentGroupMeta?.name || 'Loading...';
@@ -123,8 +125,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const handleAddExpense = async (expenseData: CreateExpenseRequest) => {
         if (!activeGroupId) return;
         await dispatch(createExpense({ groupId: activeGroupId, data: expenseData })).unwrap();
-        // The slice handles updating the activeGroup count, but we also need to refresh the history
-        void dispatch(fetchGroupById(activeGroupId));
+        // Refresh everything to ensure consistency
+        await handleFetchGroupById(activeGroupId);
     };
 
     const handleUpdateExpense = async (id: string, expenseData: UpdateExpenseRequest) => {
@@ -139,9 +141,6 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         await dispatch(deleteExpense({ groupId: activeGroupId, expenseId: id })).unwrap();
         // Refresh everything to ensure consistency
         await handleFetchGroupById(activeGroupId);
-    };
-
-    const resetGroup = () => {
     };
 
     // --- Group Management ---
@@ -234,7 +233,6 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 deleteExpense: handleDeleteExpense,
                 balances,
                 settlements,
-                resetGroup,
                 groups,
                 createGroup: handleCreateGroup,
                 updateGroup: handleUpdateGroup,
