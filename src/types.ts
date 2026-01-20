@@ -1,6 +1,6 @@
 // Re-export all types from organized structure for backward compatibility
 export type { Member } from './types/member.types';
-export type { Split, Expense, Transaction } from './types/expense.types';
+export type { Split, Expense, Transaction, Payer, CreateExpenseRequest } from './types/expense.types';
 export { SplitType } from './types/expense.types';
 export type { SplitType as SplitTypeValue } from './types/expense.types';
 export type { GroupData, GroupMeta, GroupDetail, GroupMember } from './types/group.types';
