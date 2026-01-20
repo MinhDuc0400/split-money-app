@@ -1,10 +1,11 @@
 export const API_BASE_URL = import.meta.env.VITE_API_URL as string;
+export const API_PUBLIC_URL = import.meta.env.VITE_API_PUBLIC_URL as string;
 
 export const API_ENDPOINTS = {
     AUTH: {
-        GOOGLE: `${API_BASE_URL}/auth/google`,
-        LOGOUT: `${API_BASE_URL}/auth/logout`,
-        ME: `${API_BASE_URL}/auth/me`,
+        GOOGLE: `${API_PUBLIC_URL}/auth/google`,
+        LOGOUT: `${API_PUBLIC_URL}/auth/logout`,
+        ME: `${API_PUBLIC_URL}/auth/me`,
     },
     GROUPS: {
         BASE: `${API_BASE_URL}/groups`,
