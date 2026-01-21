@@ -9,7 +9,7 @@ services:
         VITE_API_PUBLIC_URL: ${VITE_API_PUBLIC_URL}
     container_name: splitmoney-frontend
     ports:
-      - "80:80"
+      - "81:80"
     restart: unless-stopped
     env_file:
       - .env
