@@ -3,7 +3,7 @@ import { Trash2, Pencil, X, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { formatAmount } from '../../lib/currency';
-import type { Member } from '../../types';
+import type { Member } from '../../types/member.types';
 
 interface MemberListItemProps {
     member: Member;

@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExpenseForm } from '../ExpenseForm';
-import type { SplitType, Split, Payer, CreateExpenseRequest } from '../../types';
+import type { SplitType, Split, Payer, CreateExpenseRequest } from '../../types/expense.types';
 
 interface EditExpenseModalProps {
     isOpen: boolean;

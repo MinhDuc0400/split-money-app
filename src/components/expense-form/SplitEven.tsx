@@ -1,7 +1,7 @@
 import React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import type { Member } from '../../types';
+import type { Member } from '../../types/member.types';
 
 interface SplitEvenProps {
     members: Member[];

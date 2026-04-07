@@ -1,5 +1,6 @@
 import { cn } from '../../lib/utils';
-import { type Member, SplitType } from '../../types';
+import type { Member } from '../../types/member.types';
+import { SplitType } from '../../types/expense.types';
 
 interface SubmitButtonProps {
     children: React.ReactNode;

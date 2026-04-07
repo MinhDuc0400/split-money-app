@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
-import { type Member, type Transaction } from '../types';
+import { type Member } from '../types/member.types';
+import { type Transaction } from '../types/expense.types';
 import { type GroupMeta, type GroupDetail, type GroupMember, type UserBalanceResponse, type GroupSettlement, type GroupBalancesResponse, type CreateSettlementRequest } from '../types/group.types';
 import { type Expense, type CreateExpenseRequest, type UpdateExpenseRequest, type TransactionHistoryMap } from '../types/expense.types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';

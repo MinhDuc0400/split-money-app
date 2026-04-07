@@ -2,7 +2,7 @@ import React from 'react';
 import { Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
-import { AppTab } from '../types';
+import { AppTab } from '../constants/app.constants';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
 import { useDispatch, useSelector } from 'react-redux';

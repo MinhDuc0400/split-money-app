@@ -3,7 +3,7 @@ import { X, ChevronRight, Search } from 'lucide-react';
 import { useGroup } from '../context/GroupContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ExpenseForm } from './ExpenseForm';
-import type { CreateExpenseRequest } from '../types';
+import type { CreateExpenseRequest } from '../types/expense.types';
 
 export function AddExpense({ onClose }: { onClose: () => void }) {
     const { addExpense, groups, activeGroupId, fetchGroupById } = useGroup();

@@ -1,5 +1,5 @@
 import { cn } from '../../lib/utils';
-import { SplitType } from '../../types';
+import { SplitType } from '../../types/expense.types';
 
 interface SplitTypeSelectorProps {
     splitType: SplitType;

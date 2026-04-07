@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/utils';
-import type { Member } from '../../types';
+import type { Member } from '../../types/member.types';
 import { getCurrencySymbol, formatCurrencyInput, removeThousandsSeparator } from '../../lib/currency';
 
 interface SplitExactProps {

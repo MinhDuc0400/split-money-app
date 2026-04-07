@@ -1,6 +1,6 @@
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import type { Member } from '../../types';
+import type { Member } from '../../types/member.types';
 
 interface GroupDetailsCardProps {
     members: Member[];

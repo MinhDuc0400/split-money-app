@@ -1,6 +1,6 @@
 import { cn } from '../../lib/utils';
 import { formatAmount } from '../../lib/currency';
-import type { Member } from '../../types';
+import type { Member } from '../../types/member.types';
 import type { GroupBalancesResponse } from '../../types/group.types';
 
 interface MemberBalancesListProps {

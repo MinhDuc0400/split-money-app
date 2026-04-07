@@ -1,5 +1,5 @@
 import { cn } from '../../lib/utils';
-import type { Member } from '../../types';
+import type { Member } from '../../types/member.types';
 
 interface PayerSelectorProps {
     members: Member[];

@@ -1,6 +1,7 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { Member, Expense } from '../../types';
-import { SplitType } from '../../types';
+import type { Member } from '../../types/member.types';
+import type { Expense } from '../../types/expense.types';
+import { SplitType } from '../../types/expense.types';
 
 interface FinanceState {
     // Keyed by Group ID

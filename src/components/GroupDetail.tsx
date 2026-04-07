@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
 import { ArrowLeft, Users } from 'lucide-react';
-import { SplitType, type Expense, type Split } from '../types';
+import { SplitType, type Expense, type Split } from '../types/expense.types';
 import { SettlementPlanList } from './group-detail/SettlementPlanList';
 import { MemberBalancesList } from './group-detail/MemberBalancesList';
 import { HistoryList } from './group-detail/HistoryList';

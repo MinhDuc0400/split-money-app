@@ -1,6 +1,6 @@
 import { SummaryCard } from './SummaryCard';
 import { formatAmount } from '../../lib/currency';
-import type { Expense } from '../../types';
+import type { Expense } from '../../types/expense.types';
 
 interface TotalSpentCardProps {
     expenses: Expense[];

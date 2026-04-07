@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
 import { removeThousandsSeparator, formatAmount } from '../../lib/currency';
-import type { Member, Split } from '../../types';
+import type { Member } from '../../types/member.types';
+import type { Split } from '../../types/expense.types';
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 

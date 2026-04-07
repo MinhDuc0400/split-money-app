@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { GroupMeta, GroupDetail, GroupMember } from '../../types';
+import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
 import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
 import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest } from '../../types/group.types';
 import { api } from '../../lib/api';
-import { API_ENDPOINTS } from '../../constants';
+import { API_ENDPOINTS } from '../../constants/api.constants';
 
 interface GroupState {
     items: GroupMeta[];

@@ -1,16 +1,11 @@
-import { useState } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { GroupProvider } from './context/GroupContext';
 import { Layout } from './components/Layout';
-import { Dashboard } from './components/Dashboard';
-import { GlobalDashboard } from './components/GlobalDashboard';
-import { GroupDetail } from './components/GroupDetail';
-import { MemberManager } from './components/MemberManager';
-import { AddExpense } from './components/AddExpense';
 import { Login } from './components/auth/Login';
 import { AuthCallback } from './components/auth/AuthCallback';
-import { MobileGroupList } from './components/MobileGroupList';
+
 import { useSelector } from 'react-redux';
 import type { RootState } from './store';
 
@@ -18,6 +13,13 @@ import type { RootState } from './store';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
 import { store, persistor } from './store';
+
+const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ default: m.Dashboard })));
+const GlobalDashboard = lazy(() => import('./components/GlobalDashboard').then(m => ({ default: m.GlobalDashboard })));
+const GroupDetail = lazy(() => import('./components/GroupDetail').then(m => ({ default: m.GroupDetail })));
+const MemberManager = lazy(() => import('./components/MemberManager').then(m => ({ default: m.MemberManager })));
+const AddExpense = lazy(() => import('./components/AddExpense').then(m => ({ default: m.AddExpense })));
+const MobileGroupList = lazy(() => import('./components/MobileGroupList').then(m => ({ default: m.MobileGroupList })));
 
 function AppInner() {
     const location = useLocation();
@@ -49,18 +51,22 @@ function AppInner() {
                 setIsAddExpenseOpen(true);
             }}
         >
-            <Routes>
-                <Route path="/" element={<GlobalDashboard />} />
-                <Route path="/groups" element={<MobileGroupList />} />
-                <Route path="/group/:id" element={<Dashboard />} />
-                <Route path="/group/:id/details" element={<GroupDetail />} />
-                <Route path="/group/:id/members" element={<MemberManager />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
+            <Suspense fallback={null}>
+                <Routes>
+                    <Route path="/" element={<GlobalDashboard />} />
+                    <Route path="/groups" element={<MobileGroupList />} />
+                    <Route path="/group/:id" element={<Dashboard />} />
+                    <Route path="/group/:id/details" element={<GroupDetail />} />
+                    <Route path="/group/:id/members" element={<MemberManager />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </Suspense>
             {isAddExpenseOpen && (
-                <AddExpense onClose={() => {
-                    setIsAddExpenseOpen(false);
-                }} />
+                <Suspense fallback={null}>
+                    <AddExpense onClose={() => {
+                        setIsAddExpenseOpen(false);
+                    }} />
+                </Suspense>
             )}
         </Layout>
     );
