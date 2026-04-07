@@ -1,4 +1,4 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useCallback } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { GroupProvider } from './context/GroupContext';
@@ -24,6 +24,8 @@ const MobileGroupList = lazy(() => import('./components/MobileGroupList').then(m
 function AppInner() {
     const location = useLocation();
     const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
+    const handleOpenAddExpense = useCallback(() => setIsAddExpenseOpen(true), []);
+    const handleCloseAddExpense = useCallback(() => setIsAddExpenseOpen(false), []);
     const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
     const isAuthPage = location.pathname === '/login' || location.pathname === '/auth/callback';
@@ -46,11 +48,7 @@ function AppInner() {
     }
 
     return (
-        <Layout
-            onAddExpense={() => {
-                setIsAddExpenseOpen(true);
-            }}
-        >
+        <Layout onAddExpense={handleOpenAddExpense}>
             <Suspense fallback={null}>
                 <Routes>
                     <Route path="/" element={<GlobalDashboard />} />
@@ -61,13 +59,11 @@ function AppInner() {
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Suspense>
-            {isAddExpenseOpen && (
+            {isAddExpenseOpen ? (
                 <Suspense fallback={null}>
-                    <AddExpense onClose={() => {
-                        setIsAddExpenseOpen(false);
-                    }} />
+                    <AddExpense onClose={handleCloseAddExpense} />
                 </Suspense>
-            )}
+            ) : null}
         </Layout>
     );
 }

@@ -1,3 +1,4 @@
+import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { SummaryCard } from './SummaryCard';
 import { formatAmount } from '../../lib/currency';
@@ -8,7 +9,7 @@ interface BalanceCardProps {
     delay?: number;
 }
 
-export function BalanceCard({ type, balances, delay }: BalanceCardProps) {
+export const BalanceCard = React.memo(function BalanceCard({ type, balances, delay = 0 }: BalanceCardProps) {
     const isOwed = type === 'owed';
     const icon = isOwed ? <TrendingUp className="w-4 h-4 text-positive" /> : <TrendingDown className="w-4 h-4 text-negative" />;
     const title = isOwed ? 'You Are Owed' : 'You Owe';
@@ -29,4 +30,4 @@ export function BalanceCard({ type, balances, delay }: BalanceCardProps) {
             </div>
         </SummaryCard>
     );
-}
+});

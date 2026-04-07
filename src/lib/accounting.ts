@@ -57,8 +57,8 @@ export function calculateSettlements(
     const all: Transaction[] = [];
 
     Object.entries(balancesByCurrency).forEach(([currency, balances]) => {
-        const debtors: { id: string; amount: number }[] = [];
-        const creditors: { id: string; amount: number }[] = [];
+        let debtors: { id: string; amount: number }[] = [];
+        let creditors: { id: string; amount: number }[] = [];
 
         Object.entries(balances).forEach(([id, amount]) => {
             const cents = Math.round(amount * 100);
@@ -66,8 +66,8 @@ export function calculateSettlements(
             if (cents > 0) creditors.push({ id, amount: cents });
         });
 
-        debtors.sort((a, b) => a.amount - b.amount);
-        creditors.sort((a, b) => b.amount - a.amount);
+        debtors = debtors.toSorted((a, b) => a.amount - b.amount);
+        creditors = creditors.toSorted((a, b) => b.amount - a.amount);
 
         let i = 0, j = 0;
 

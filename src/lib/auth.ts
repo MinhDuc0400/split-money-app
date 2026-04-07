@@ -3,29 +3,37 @@ import type { User, JWTPayload } from '../types/auth.types';
 const TOKEN_KEY = 'splitmoney_auth_token';
 const USER_KEY = 'splitmoney_user';
 
+let cachedToken: string | null = localStorage.getItem(TOKEN_KEY);
+let cachedUser: User | null = (() => {
+    try {
+        const raw = localStorage.getItem(USER_KEY);
+        return raw ? (JSON.parse(raw) as User) : null;
+    } catch {
+        return null;
+    }
+})();
+
 export const authUtils = {
     setToken: (token: string) => {
+        cachedToken = token;
         localStorage.setItem(TOKEN_KEY, token);
     },
     getToken: () => {
-        return localStorage.getItem(TOKEN_KEY);
+        return cachedToken;
     },
     clearToken: () => {
+        cachedToken = null;
         localStorage.removeItem(TOKEN_KEY);
     },
     setUser: (user: User) => {
+        cachedUser = user;
         localStorage.setItem(USER_KEY, JSON.stringify(user));
     },
     getUser: (): User | null => {
-        const user = localStorage.getItem(USER_KEY);
-        try {
-            return user ? (JSON.parse(user) as User) : null;
-        } catch (error) {
-            console.error('Failed to parse user from localStorage', error);
-            return null;
-        }
+        return cachedUser;
     },
     clearUser: () => {
+        cachedUser = null;
         localStorage.removeItem(USER_KEY);
     },
     decodeToken: (token: string): JWTPayload | null => {

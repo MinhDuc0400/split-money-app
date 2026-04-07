@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { X, ChevronRight, Search } from 'lucide-react';
 import { useGroup } from '../context/GroupContext';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,8 +20,9 @@ export function AddExpense({ onClose }: { onClose: () => void }) {
         onClose();
     };
 
-    const filteredGroups = groups.filter(g =>
-        g.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredGroups = useMemo(
+        () => groups.filter(g => g.name.toLowerCase().includes(searchQuery.toLowerCase())),
+        [groups, searchQuery]
     );
 
     return (

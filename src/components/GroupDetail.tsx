@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
 import { ArrowLeft, Users } from 'lucide-react';
@@ -70,8 +70,12 @@ export function GroupDetail() {
         return localBalances;
     }, [currentUserBalance, localBalances]);
 
-    const getMemberName = (id: string) => members.find(m => m.id === id)?.name || 'Unknown';
-    const getMemberAvatar = (id: string) => members.find(m => m.id === id)?.avatar;
+    const memberMap = useMemo(
+        () => Object.fromEntries(members.map(m => [m.id, m])),
+        [members]
+    );
+    const getMemberName = useCallback((id: string) => memberMap[id]?.name || 'Unknown', [memberMap]);
+    const getMemberAvatar = useCallback((id: string) => memberMap[id]?.avatar, [memberMap]);
 
     const currentUserMember = useMemo(() => {
         if (!authUser || !members.length) return null;
