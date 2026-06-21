@@ -2,12 +2,18 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getSocket } from '../lib/socket';
 import {
-    fetchGroupById,
     fetchTransactions,
     fetchGroupBalances,
-    fetchSettlements,
+    socketExpenseAdded,
+    socketExpenseUpdated,
+    socketExpenseDeleted,
+    socketSettlementAdded,
+    socketMemberJoined,
+    socketGroupUpdated,
 } from '../store/slices/groupSlice';
 import type { AppDispatch, RootState } from '../store';
+import type { Expense } from '../types/expense.types';
+import type { GroupMember, GroupMeta, GroupSettlement } from '../types/group.types';
 
 export function useGroupEvents(groupId: string) {
     const dispatch = useDispatch<AppDispatch>();
@@ -18,11 +24,35 @@ export function useGroupEvents(groupId: string) {
 
         const socket = getSocket(token);
 
-        const refetchAll = () => {
-            dispatch(fetchGroupById(groupId));
+        const onExpenseCreated = (payload: Expense & { groupId: string }) => {
+            dispatch(socketExpenseAdded(payload));
             dispatch(fetchTransactions(groupId));
             dispatch(fetchGroupBalances(groupId));
-            dispatch(fetchSettlements(groupId));
+        };
+
+        const onExpenseUpdated = (payload: Expense & { groupId: string }) => {
+            dispatch(socketExpenseUpdated(payload));
+            dispatch(fetchTransactions(groupId));
+            dispatch(fetchGroupBalances(groupId));
+        };
+
+        const onExpenseDeleted = (payload: { expenseId: string; groupId: string }) => {
+            dispatch(socketExpenseDeleted(payload));
+            dispatch(fetchTransactions(groupId));
+            dispatch(fetchGroupBalances(groupId));
+        };
+
+        const onSettlementUpdated = (payload: { groupId: string; settlement: GroupSettlement }) => {
+            dispatch(socketSettlementAdded(payload));
+            dispatch(fetchGroupBalances(groupId));
+        };
+
+        const onMemberJoined = (payload: GroupMember) => {
+            dispatch(socketMemberJoined(payload));
+        };
+
+        const onGroupUpdated = (payload: GroupMeta) => {
+            dispatch(socketGroupUpdated(payload));
         };
 
         const joinGroup = () => {
@@ -35,22 +65,22 @@ export function useGroupEvents(groupId: string) {
             socket.once('connect', joinGroup);
         }
 
-        socket.on('expense_created', refetchAll);
-        socket.on('expense_updated', refetchAll);
-        socket.on('expense_deleted', refetchAll);
-        socket.on('settlement_updated', refetchAll);
-        socket.on('member_joined', refetchAll);
-        socket.on('group_updated', refetchAll);
+        socket.on('expense_created', onExpenseCreated);
+        socket.on('expense_updated', onExpenseUpdated);
+        socket.on('expense_deleted', onExpenseDeleted);
+        socket.on('settlement_updated', onSettlementUpdated);
+        socket.on('member_joined', onMemberJoined);
+        socket.on('group_updated', onGroupUpdated);
 
         return () => {
             socket.emit('leave_group', { groupId });
             socket.off('connect', joinGroup);
-            socket.off('expense_created', refetchAll);
-            socket.off('expense_updated', refetchAll);
-            socket.off('expense_deleted', refetchAll);
-            socket.off('settlement_updated', refetchAll);
-            socket.off('member_joined', refetchAll);
-            socket.off('group_updated', refetchAll);
+            socket.off('expense_created', onExpenseCreated);
+            socket.off('expense_updated', onExpenseUpdated);
+            socket.off('expense_deleted', onExpenseDeleted);
+            socket.off('settlement_updated', onSettlementUpdated);
+            socket.off('member_joined', onMemberJoined);
+            socket.off('group_updated', onGroupUpdated);
         };
     }, [groupId, token, dispatch]);
 }
