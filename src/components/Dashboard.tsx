@@ -1,4 +1,5 @@
 import { useNavigate, useParams } from 'react-router-dom';
+import { useGroupEvents } from '../hooks/useGroupEvents';
 import { useGroup } from '../context/GroupContext';
 import { TotalSpentCard } from './dashboard/TotalSpentCard';
 import { BalanceCard } from './dashboard/BalanceCard';
@@ -11,6 +12,7 @@ import { useEffect } from 'react';
 export function Dashboard() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
+    useGroupEvents(id ?? '');
     const { groups, members, expenses, balances, currency, groupName, isLoading, error, activeGroupId, switchGroup } = useGroup();
     const { owedToYou, youOwe } = useBalanceCalculations({ balances });
 

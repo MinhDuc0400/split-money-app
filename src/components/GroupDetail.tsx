@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
+import { useGroupEvents } from '../hooks/useGroupEvents';
 import { ArrowLeft, Users } from 'lucide-react';
 import { SplitType, type Expense, type Split } from '../types/expense.types';
 import { SettlementPlanList } from './group-detail/SettlementPlanList';
@@ -18,6 +19,7 @@ import { type GroupSettlement } from '../types/group.types';
 export function GroupDetail() {
     const navigate = useNavigate();
     const { id: routeId } = useParams<{ id: string }>();
+    useGroupEvents(routeId ?? '');
     const {
         members,
         expenses,
