@@ -34,7 +34,7 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
     const { activeGroupId, groups: groupsMeta, fetchGroupById, isLoading } = useGroup();
     const effectiveGroupId = groupId || activeGroupId;
 
-    const allMembersMap = useAppSelector(state => state.finance.members);
+    const allMembersMap = useAppSelector(state => state.groups.membersByGroupId);
 
     // Get members for the specific group
     const members = useMemo(() => {

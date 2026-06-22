@@ -10,9 +10,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement
 } from '../store/slices/groupSlice';
-import {
-    deleteGroupData
-} from '../store/slices/financeSlice';
+import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
 interface GroupContextType {
     // Current Group Data
@@ -63,7 +61,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error, transactions, currentUserBalance, serverSettlements, groupBalances } = useAppSelector(state => state.groups);
     const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
 
-    const allMembers = useAppSelector(state => state.finance.members);
+    const allMembers = useAppSelector(state => state.groups.membersByGroupId);
     const allExpenses = useAppSelector(state => state.finance.expenses);
 
     // Derived State for Current Group
@@ -97,33 +95,18 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
 
     // --- Actions ---
 
-    const handleAddMember = (name: string) => {
-        if (!activeGroupId) return;
-        const newMember: Member = {
-            id: crypto.randomUUID(),
-            name,
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
-        };
-        // TODO: Move to API
-        dispatch({ type: 'finance/addMember', payload: { groupId: activeGroupId, member: newMember } });
-    };
-
-    const handleUpdateMemberName = (id: string, name: string) => {
-        if (!activeGroupId) return;
-        // TODO: Move to API
-        dispatch({ type: 'finance/updateMemberName', payload: { groupId: activeGroupId, memberId: id, name } });
-    };
+    // TODO: wire to API — member mutations are not yet backed by a REST endpoint
+    const handleAddMember = (_name: string) => { /* no-op until API exists */ };
+    const handleUpdateMemberName = (_id: string, _name: string) => { /* no-op until API exists */ };
 
     const handleRemoveMember = (id: string) => {
         if (!activeGroupId) return;
-        // TODO: Move to API
-        dispatch({ type: 'finance/removeMember', payload: { groupId: activeGroupId, memberId: id } });
+        dispatch(removeMemberAndRedistribute({ groupId: activeGroupId, memberId: id }));
     };
 
     const handleRemoveMemberAndRedistribute = (id: string) => {
         if (!activeGroupId) return;
-        // TODO: Move to API
-        dispatch({ type: 'finance/removeMemberAndRedistribute', payload: { groupId: activeGroupId, memberId: id } });
+        dispatch(removeMemberAndRedistribute({ groupId: activeGroupId, memberId: id }));
     };
 
     const handleAddExpense = async (expenseData: CreateExpenseRequest) => {

@@ -1,7 +1,9 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
+import type { HistoryTransaction } from '../../types/expense.types';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
 import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
 import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest } from '../../types/group.types';
+import type { Member } from '../../types/member.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants/api.constants';
 
@@ -14,6 +16,7 @@ interface GroupState {
     currentUserBalance: UserBalanceResponse | null;
     serverSettlements: GroupSettlement[];
     groupBalances: GroupBalancesResponse | null;
+    membersByGroupId: Record<string, Member[]>;
     error: string | null;
 }
 
@@ -26,8 +29,18 @@ const initialState: GroupState = {
     currentUserBalance: null,
     serverSettlements: [],
     groupBalances: null,
+    membersByGroupId: {},
     error: null,
 };
+
+function toMember(m: GroupMember): Member {
+    return {
+        id: m.id,
+        name: m.name,
+        avatar: m.avatarUrl ?? undefined,
+        userId: m.userId ?? undefined,
+    };
+}
 
 export const fetchGroups = createAsyncThunk('groups/fetchAll', async () => {
     return await api.get<GroupMeta[]>(API_ENDPOINTS.GROUPS.BASE);
@@ -109,6 +122,63 @@ const groupSlice = createSlice({
         setActiveGroup: (state, action: PayloadAction<string>) => {
             state.activeId = action.payload;
         },
+        // Socket real-time reducers
+        socketExpenseAdded: (state, action: PayloadAction<Expense & { groupId: string }>) => {
+            const expense = action.payload;
+            if (state.activeGroup && state.activeGroup.id === expense.groupId) {
+                const exists = state.activeGroup.expenses.some(e => e.id === expense.id);
+                if (!exists) {
+                    state.activeGroup.expenses.unshift(expense);
+                    state.activeGroup._count.expenses += 1;
+                }
+            }
+        },
+        socketExpenseUpdated: (state, action: PayloadAction<Expense & { groupId: string }>) => {
+            const expense = action.payload;
+            if (state.activeGroup && state.activeGroup.id === expense.groupId) {
+                const index = state.activeGroup.expenses.findIndex(e => e.id === expense.id);
+                if (index !== -1) {
+                    state.activeGroup.expenses[index] = expense;
+                }
+            }
+        },
+        socketExpenseDeleted: (state, action: PayloadAction<{ expenseId: string; groupId: string }>) => {
+            const { expenseId, groupId } = action.payload;
+            if (state.activeGroup && state.activeGroup.id === groupId) {
+                state.activeGroup.expenses = state.activeGroup.expenses.filter(e => e.id !== expenseId);
+                state.activeGroup._count.expenses = Math.max(0, state.activeGroup._count.expenses - 1);
+            }
+        },
+        socketSettlementAdded: (state, action: PayloadAction<{ groupId: string; settlement: import('../../types/group.types').GroupSettlement }>) => {
+            const { groupId, settlement } = action.payload;
+            if (state.activeGroup && state.activeGroup.id === groupId) {
+                state.serverSettlements.push(settlement);
+            }
+        },
+        socketMemberJoined: (state, action: PayloadAction<import('../../types/group.types').GroupMember>) => {
+            const member = action.payload;
+            if (state.activeGroup && state.activeGroup.id === member.groupId) {
+                const exists = state.activeGroup.members.some(m => m.id === member.id);
+                if (!exists) {
+                    state.activeGroup.members.push(member);
+                }
+            }
+            // Keep membersByGroupId in sync so expense form picks up the new member immediately
+            const list = state.membersByGroupId[member.groupId];
+            if (list && !list.some(m => m.id === member.id)) {
+                list.push(toMember(member));
+            }
+        },
+        socketGroupUpdated: (state, action: PayloadAction<import('../../types/group.types').GroupMeta>) => {
+            const updated = action.payload;
+            const index = state.items.findIndex(g => g.id === updated.id);
+            if (index !== -1) {
+                state.items[index] = { ...state.items[index], ...updated };
+            }
+            if (state.activeGroup && state.activeGroup.id === updated.id) {
+                state.activeGroup = { ...state.activeGroup, ...updated };
+            }
+        },
     },
     extraReducers: (builder) => {
         builder
@@ -148,6 +218,8 @@ const groupSlice = createSlice({
                 if (state.activeId === action.payload) {
                     state.activeId = state.items.length > 0 ? state.items[0].id : null;
                 }
+                // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+                delete state.membersByGroupId[action.payload];
             })
             // Join Group
             .addCase(joinGroup.pending, (state) => {
@@ -173,8 +245,8 @@ const groupSlice = createSlice({
             .addCase(fetchGroupById.fulfilled, (state, action) => {
                 state.isLoading = false;
                 state.activeGroup = action.payload;
-                // Sync activeId if not already set or different
                 state.activeId = action.payload.id;
+                state.membersByGroupId[action.payload.id] = action.payload.members.map(toMember);
             })
             .addCase(fetchGroupById.rejected, (state, action) => {
                 state.isLoading = false;
@@ -318,5 +390,13 @@ const groupSlice = createSlice({
     },
 });
 
-export const { setActiveGroup } = groupSlice.actions;
+export const {
+    setActiveGroup,
+    socketExpenseAdded,
+    socketExpenseUpdated,
+    socketExpenseDeleted,
+    socketSettlementAdded,
+    socketMemberJoined,
+    socketGroupUpdated,
+} = groupSlice.actions;
 export default groupSlice.reducer;
