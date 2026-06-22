@@ -8,7 +8,7 @@ import { calculateBalances, calculateSettlements } from '../lib/accounting';
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary
 } from '../store/slices/groupSlice';
 import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
@@ -24,6 +24,7 @@ interface GroupContextType {
     currentUserBalance: UserBalanceResponse | null;
     serverSettlements: GroupSettlement[];
     groupBalances: GroupBalancesResponse | null;
+    balanceSummary: Record<string, { totalBalance: number; totalOwed: number; totalOwing: number }> | null;
     isLoading: boolean;
     error: string | null;
 
@@ -58,7 +59,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const dispatch = useAppDispatch();
 
     // Redux Selectors
-    const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error, transactions, currentUserBalance, serverSettlements, groupBalances } = useAppSelector(state => state.groups);
+    const { items: groups, activeGroup, activeId: activeGroupId, isLoading, error, transactions, currentUserBalance, serverSettlements, groupBalances, balanceSummary } = useAppSelector(state => state.groups);
     const isAuthenticated = useAppSelector(state => state.auth.isAuthenticated);
 
     const allMembers = useAppSelector(state => state.groups.membersByGroupId);
@@ -90,6 +91,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         if (isAuthenticated) {
             void dispatch(fetchGroups());
+            void dispatch(fetchBalanceSummary());
         }
     }, [isAuthenticated, dispatch]);
 
@@ -133,8 +135,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const handleSettleUp = async (data: CreateSettlementRequest) => {
         if (!activeGroupId) return;
         await dispatch(createSettlement({ groupId: activeGroupId, data })).unwrap();
-        // Refresh everything to ensure consistency
         await handleFetchGroupById(activeGroupId);
+        void dispatch(fetchBalanceSummary());
     };
 
     // --- Group Management ---
@@ -220,6 +222,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 currentUserBalance,
                 serverSettlements,
                 groupBalances,
+                balanceSummary,
                 isLoading,
                 error,
                 fetchGroupById: handleFetchGroupById,

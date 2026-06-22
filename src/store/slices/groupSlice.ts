@@ -7,6 +7,12 @@ import type { Member } from '../../types/member.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants/api.constants';
 
+interface BalanceSummaryByCurrency {
+    totalBalance: number;
+    totalOwed: number;
+    totalOwing: number;
+}
+
 interface GroupState {
     items: GroupMeta[];
     activeGroup: GroupDetail | null;
@@ -17,6 +23,7 @@ interface GroupState {
     serverSettlements: GroupSettlement[];
     groupBalances: GroupBalancesResponse | null;
     membersByGroupId: Record<string, Member[]>;
+    balanceSummary: Record<string, BalanceSummaryByCurrency> | null;
     error: string | null;
 }
 
@@ -30,6 +37,7 @@ const initialState: GroupState = {
     serverSettlements: [],
     groupBalances: null,
     membersByGroupId: {},
+    balanceSummary: null,
     error: null,
 };
 
@@ -107,6 +115,10 @@ export const deleteExpense = createAsyncThunk(
         return { groupId, expenseId };
     }
 );
+
+export const fetchBalanceSummary = createAsyncThunk('groups/fetchBalanceSummary', async () => {
+    return await api.get<{ byCurrency: Record<string, { totalBalance: number; totalOwed: number; totalOwing: number }> }>(API_ENDPOINTS.BALANCES.SUMMARY);
+});
 
 export const createSettlement = createAsyncThunk(
     'groups/createSettlement',
@@ -373,6 +385,10 @@ const groupSlice = createSlice({
             .addCase(fetchGroupBalances.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to fetch group balances';
+            })
+            // Fetch Balance Summary (cross-group totals)
+            .addCase(fetchBalanceSummary.fulfilled, (state, action) => {
+                state.balanceSummary = action.payload.byCurrency;
             })
             // Create Settlement
             .addCase(createSettlement.pending, (state) => {

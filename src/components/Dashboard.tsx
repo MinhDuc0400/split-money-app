@@ -7,14 +7,26 @@ import { GroupDetailsCard } from './dashboard/GroupDetailsCard';
 import { QuickStatsCard } from './dashboard/QuickStatsCard';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { WelcomeView } from './dashboard/WelcomeView';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 export function Dashboard() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     useGroupEvents(id ?? '');
-    const { groups, members, expenses, balances, currency, groupName, isLoading, error, activeGroupId, switchGroup } = useGroup();
-    const { owedToYou, youOwe } = useBalanceCalculations({ balances });
+    const { groups, members, expenses, balances, currency, groupName, isLoading, error, activeGroupId, switchGroup, currentUserBalance } = useGroup();
+    const localCalc = useBalanceCalculations({ balances });
+    const { owedToYou, youOwe } = useMemo(() => {
+        if (currentUserBalance && Object.keys(currentUserBalance.balances).length > 0) {
+            const owed: Array<{ currency: string; amount: number }> = [];
+            const owing: Array<{ currency: string; amount: number }> = [];
+            Object.entries(currentUserBalance.balances).forEach(([curr, data]) => {
+                if (data.totalOwed > 0.01) owed.push({ currency: curr, amount: data.totalOwed });
+                if (data.totalOwe > 0.01) owing.push({ currency: curr, amount: data.totalOwe });
+            });
+            return { owedToYou: owed, youOwe: owing };
+        }
+        return localCalc;
+    }, [currentUserBalance, localCalc]);
 
     // Sync active group with URL
     useEffect(() => {

@@ -22,4 +22,7 @@ export const API_ENDPOINTS = {
         BASE: `${API_BASE_URL}/expenses`,
         BY_ID: (id: string) => `${API_BASE_URL}/expenses/${id}`,
     },
+    BALANCES: {
+        SUMMARY: `${API_BASE_URL}/balances/summary`,
+    },
 };

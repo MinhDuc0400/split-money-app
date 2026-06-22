@@ -7,6 +7,7 @@ import { Login } from './components/auth/Login';
 import { AuthCallback } from './components/auth/AuthCallback';
 
 import { useSelector } from 'react-redux';
+import { SocketManager } from './components/SocketManager';
 import type { RootState } from './store';
 
 // Redux
@@ -75,6 +76,7 @@ function App() {
                 <ThemeProvider>
                     <GroupProvider>
                         <Router>
+                            <SocketManager />
                             <AppInner />
                         </Router>
                     </GroupProvider>

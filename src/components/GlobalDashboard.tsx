@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
-import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { motion } from 'framer-motion';
 import { Users, ChevronRight } from 'lucide-react';
@@ -9,8 +8,19 @@ import { WelcomeView } from './dashboard/WelcomeView';
 
 export const GlobalDashboard: React.FC = () => {
     const navigate = useNavigate();
-    const { groups, overallBalances, isLoading, switchGroup } = useGroup();
-    const { owedToYou, youOwe } = useBalanceCalculations({ balances: overallBalances });
+    const { groups, balanceSummary, isLoading, switchGroup } = useGroup();
+
+    // Derive owed/owing from server-side balance summary (accounts for settlements)
+    const owedToYou = balanceSummary
+        ? Object.entries(balanceSummary)
+            .filter(([, v]) => v.totalOwed > 0.01)
+            .map(([currency, v]) => ({ currency, amount: v.totalOwed }))
+        : [];
+    const youOwe = balanceSummary
+        ? Object.entries(balanceSummary)
+            .filter(([, v]) => v.totalOwing > 0.01)
+            .map(([currency, v]) => ({ currency, amount: v.totalOwing }))
+        : [];
 
     if (isLoading) {
         return (

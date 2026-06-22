@@ -15,6 +15,7 @@ import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector } from '../store/hooks';
 import { type GroupSettlement } from '../types/group.types';
+import { calculateSettlements } from '../lib/accounting';
 
 export function GroupDetail() {
     const navigate = useNavigate();
@@ -25,9 +26,7 @@ export function GroupDetail() {
         expenses,
         transactions,
         currentUserBalance,
-        serverSettlements,
         groupBalances,
-        settlements,
         balances,
         deleteExpense,
         updateExpense,
@@ -51,7 +50,7 @@ export function GroupDetail() {
         }
     }, [routeId, fetchGroupById]);
 
-    // Personal balance summary - Fetch from server if available, fallback to local calculation
+    // Personal balance summary - prefer server data, fallback to local calculation
     const localBalances = useBalanceCalculations({ balances });
     const { owedToYou, youOwe } = useMemo(() => {
         if (currentUserBalance && Object.keys(currentUserBalance.balances).length > 0) {
@@ -78,6 +77,26 @@ export function GroupDetail() {
     );
     const getMemberName = useCallback((id: string) => memberMap[id]?.name || 'Unknown', [memberMap]);
     const getMemberAvatar = useCallback((id: string) => memberMap[id]?.avatar, [memberMap]);
+
+    // Settlement plan derived from server-side member balances.
+    // groupBalances is re-fetched after every settle-up so this stays accurate —
+    // no fallback to local expense-math that doesn't account for settlements.
+    const settlementPlan = useMemo((): GroupSettlement[] => {
+        if (!groupBalances) return [];
+        const balanceInput: Record<string, Record<string, number>> = {};
+        for (const [currency, memberBalances] of Object.entries(groupBalances)) {
+            balanceInput[currency] = {};
+            for (const m of memberBalances) {
+                balanceInput[currency][m.memberId] = m.balance;
+            }
+        }
+        return calculateSettlements(balanceInput).map(t => ({
+            from: { memberId: t.from, name: getMemberName(t.from), avatarUrl: getMemberAvatar(t.from) ?? '' },
+            to: { memberId: t.to, name: getMemberName(t.to), avatarUrl: getMemberAvatar(t.to) ?? '' },
+            amount: t.amount,
+            currency: t.currency,
+        }));
+    }, [groupBalances, getMemberName, getMemberAvatar]);
 
     const currentUserMember = useMemo(() => {
         if (!authUser || !members.length) return null;
@@ -218,12 +237,7 @@ export function GroupDetail() {
                 {/* Right Column: Settlements */}
                 <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
                     <SettlementPlanList
-                        settlements={serverSettlements?.length > 0 ? serverSettlements : settlements.map(s => ({
-                            from: { memberId: s.from, name: '', avatarUrl: '' },
-                            to: { memberId: s.to, name: '', avatarUrl: '' },
-                            amount: s.amount,
-                            currency: s.currency
-                        }))}
+                        settlements={settlementPlan}
                         getMemberName={getMemberName}
                         getMemberAvatar={getMemberAvatar}
                         onSettle={handleSettleClick}
