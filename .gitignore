@@ -28,3 +28,8 @@ dist-ssr
 .env.*
 !.env.production
 !.env.example
+
+# Claude Code agent infrastructure
+.agents/
+.junie/
+skills-lock.json
