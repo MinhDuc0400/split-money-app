@@ -10,7 +10,6 @@ interface PayerSelectorProps {
 export function PayerSelector({ members, payerId, setPayerId }: PayerSelectorProps) {
     return (
         <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paid By</label>
             <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                 {members.map(member => (
                     <button

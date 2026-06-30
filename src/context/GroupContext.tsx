@@ -8,7 +8,7 @@ import { calculateBalances, calculateSettlements } from '../lib/accounting';
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary, leaveGroupApi
 } from '../store/slices/groupSlice';
 import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
@@ -46,8 +46,9 @@ interface GroupContextType {
     createGroup: (name: string, currency: string) => Promise<GroupMeta>;
     updateGroup: (id: string, name: string, currency: string) => void;
     switchGroup: (id: string) => void;
-    deleteGroup: (id: string) => void;
+    deleteGroup: (id: string) => Promise<void>;
     joinGroup: (code: string) => Promise<GroupMember>;
+    leaveGroup: (id: string) => Promise<void>;
     refreshGroups: () => void;
     overallBalances: Record<string, Record<string, number>>; // Aggregate: currency -> memberId -> balance
     resetGroup: () => void;
@@ -154,16 +155,19 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         dispatch(setActiveGroup(id));
     };
 
-    const handleDeleteGroup = (id: string) => {
-        void dispatch(deleteGroupApi(id)).then(() => {
-            dispatch(deleteGroupData(id)); // Clean up normalized data
-        });
+    const handleDeleteGroup = async (id: string) => {
+        await dispatch(deleteGroupApi(id)).unwrap();
+        dispatch(deleteGroupData(id));
     };
 
     const handleJoinGroup = useCallback(async (code: string) => {
         const joinedMember = await dispatch(joinGroup(code)).unwrap();
         void dispatch(fetchGroups());
         return joinedMember;
+    }, [dispatch]);
+
+    const handleLeaveGroup = useCallback(async (id: string) => {
+        await dispatch(leaveGroupApi(id)).unwrap();
     }, [dispatch]);
 
     const handleFetchGroupById = useCallback(async (id: string) => {
@@ -242,6 +246,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 switchGroup: handleSwitchGroup,
                 deleteGroup: handleDeleteGroup,
                 joinGroup: handleJoinGroup,
+                leaveGroup: handleLeaveGroup,
                 refreshGroups: handleRefreshGroups,
                 overallBalances,
                 resetGroup: handleResetGroup

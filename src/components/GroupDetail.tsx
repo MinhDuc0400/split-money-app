@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
+import { LogOut, Trash2 } from 'lucide-react';
 import { useGroupEvents } from '../hooks/useGroupEvents';
 import { ArrowLeft, Users } from 'lucide-react';
 import { SplitType, type Expense, type Split } from '../types/expense.types';
@@ -34,7 +35,9 @@ export function GroupDetail() {
         groupName,
         activeGroup,
         fetchGroupById,
-        settleUp
+        settleUp,
+        leaveGroup,
+        deleteGroup,
     } = useGroup();
     const authUser = useAppSelector(state => state.auth.user);
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
@@ -42,6 +45,10 @@ export function GroupDetail() {
     const [settlingPayment, setSettlingPayment] = useState<GroupSettlement | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSettling, setIsSettling] = useState(false);
+    const [isLeavingGroup, setIsLeavingGroup] = useState(false);
+    const [leaveError, setLeaveError] = useState<string | null>(null);
+    const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+    const [deleteGroupError, setDeleteGroupError] = useState<string | null>(null);
 
     // Fetch group details on mount or ID change
     useEffect(() => {
@@ -145,6 +152,58 @@ export function GroupDetail() {
         }
     };
 
+    const isSettledUp = useMemo(() => {
+        if (!currentUserBalance) return true;
+        return Object.values(currentUserBalance.balances).every(
+            b => b.totalOwed < 0.01 && b.totalOwe < 0.01
+        );
+    }, [currentUserBalance]);
+
+    const isGroupFullySettled = useMemo(() => {
+        if (!groupBalances) return true;
+        return Object.values(groupBalances).every(members =>
+            members.every(m => Math.abs(m.balance) < 0.01)
+        );
+    }, [groupBalances]);
+
+    const isOwner = currentUserMember?.role === 'OWNER';
+
+    const handleLeaveGroup = async () => {
+        if (!activeGroup) return;
+        if (!isSettledUp) {
+            setLeaveError('You have unsettled balances. Please settle up before leaving the group.');
+            return;
+        }
+        setIsLeavingGroup(true);
+        try {
+            await leaveGroup(activeGroup.id);
+            navigate('/');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to leave group';
+            setLeaveError(msg);
+        } finally {
+            setIsLeavingGroup(false);
+        }
+    };
+
+    const handleDeleteGroup = async () => {
+        if (!activeGroup) return;
+        if (!isGroupFullySettled) {
+            setDeleteGroupError('All members must settle their balances before the group can be deleted.');
+            return;
+        }
+        setIsDeletingGroup(true);
+        try {
+            await deleteGroup(activeGroup.id);
+            navigate('/');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to delete group';
+            setDeleteGroupError(msg);
+        } finally {
+            setIsDeletingGroup(false);
+        }
+    };
+
     const handleUpdateExpense = async (data: Omit<Expense, 'id' | 'createdAt'>) => {
         if (editingExpenseId) {
             await updateExpense(editingExpenseId, data);
@@ -204,8 +263,41 @@ export function GroupDetail() {
                     {activeGroup?.inviteCode && (
                         <InvitationBox inviteCode={activeGroup.inviteCode} />
                     )}
+                    {isOwner ? (
+                        <button
+                            onClick={() => void handleDeleteGroup()}
+                            disabled={isDeletingGroup}
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {isDeletingGroup ? 'Deleting...' : 'Delete Group'}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => void handleLeaveGroup()}
+                            disabled={isLeavingGroup}
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                            {isLeavingGroup ? 'Leaving...' : 'Quit Group'}
+                        </button>
+                    )}
                 </div>
             </div>
+
+            {/* Action error alerts */}
+            {leaveError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{leaveError}</p>
+                    <button onClick={() => setLeaveError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
+                </div>
+            )}
+            {deleteGroupError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{deleteGroupError}</p>
+                    <button onClick={() => setDeleteGroupError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
+                </div>
+            )}
 
             {/* Main Content Splitwise-style */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

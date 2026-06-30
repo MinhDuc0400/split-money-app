@@ -9,6 +9,7 @@ import {
     socketExpenseDeleted,
     socketSettlementAdded,
     socketMemberJoined,
+    socketMemberLeft,
     socketGroupUpdated,
 } from '../store/slices/groupSlice';
 import type { AppDispatch, RootState } from '../store';
@@ -51,6 +52,10 @@ export function useGroupEvents(groupId: string) {
             dispatch(socketMemberJoined(payload));
         };
 
+        const onMemberLeft = (payload: { memberId: string; groupId: string }) => {
+            dispatch(socketMemberLeft(payload));
+        };
+
         const onGroupUpdated = (payload: GroupMeta) => {
             dispatch(socketGroupUpdated(payload));
         };
@@ -70,6 +75,7 @@ export function useGroupEvents(groupId: string) {
         socket.on('expense_deleted', onExpenseDeleted);
         socket.on('settlement_updated', onSettlementUpdated);
         socket.on('member_joined', onMemberJoined);
+        socket.on('member_left', onMemberLeft);
         socket.on('group_updated', onGroupUpdated);
 
         return () => {
@@ -80,6 +86,7 @@ export function useGroupEvents(groupId: string) {
             socket.off('expense_deleted', onExpenseDeleted);
             socket.off('settlement_updated', onSettlementUpdated);
             socket.off('member_joined', onMemberJoined);
+            socket.off('member_left', onMemberLeft);
             socket.off('group_updated', onGroupUpdated);
         };
     }, [groupId, token, dispatch]);

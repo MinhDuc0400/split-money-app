@@ -73,7 +73,6 @@ export function MultiPayerSelector({ members, payers, setPayers, totalAmount, cu
     return (
         <div className="space-y-4 bg-secondary/20 p-4 rounded-2xl border border-border/50">
             <div className="flex justify-between items-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                <span>Who Paid?</span>
                 <span className={cn(
                     "font-bold",
                     Math.abs(remaining) < 0.01 ? "text-positive" : "text-amber-500"

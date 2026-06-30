@@ -120,6 +120,11 @@ export const fetchBalanceSummary = createAsyncThunk('groups/fetchBalanceSummary'
     return await api.get<{ byCurrency: Record<string, { totalBalance: number; totalOwed: number; totalOwing: number }> }>(API_ENDPOINTS.BALANCES.SUMMARY);
 });
 
+export const leaveGroupApi = createAsyncThunk('groups/leave', async (id: string) => {
+    await api.delete(API_ENDPOINTS.GROUPS.LEAVE(id));
+    return id;
+});
+
 export const createSettlement = createAsyncThunk(
     'groups/createSettlement',
     async ({ groupId, data }: { groupId: string; data: CreateSettlementRequest }) => {
@@ -179,6 +184,16 @@ const groupSlice = createSlice({
             const list = state.membersByGroupId[member.groupId];
             if (list && !list.some(m => m.id === member.id)) {
                 list.push(toMember(member));
+            }
+        },
+        socketMemberLeft: (state, action: PayloadAction<{ memberId: string; groupId: string }>) => {
+            const { memberId, groupId } = action.payload;
+            if (state.activeGroup && state.activeGroup.id === groupId) {
+                state.activeGroup.members = state.activeGroup.members.filter(m => m.id !== memberId);
+            }
+            const list = state.membersByGroupId[groupId];
+            if (list) {
+                state.membersByGroupId[groupId] = list.filter(m => m.id !== memberId);
             }
         },
         socketGroupUpdated: (state, action: PayloadAction<import('../../types/group.types').GroupMeta>) => {
@@ -390,6 +405,16 @@ const groupSlice = createSlice({
             .addCase(fetchBalanceSummary.fulfilled, (state, action) => {
                 state.balanceSummary = action.payload.byCurrency;
             })
+            // Leave Group
+            .addCase(leaveGroupApi.fulfilled, (state, action) => {
+                state.items = state.items.filter(g => g.id !== action.payload);
+                if (state.activeId === action.payload) {
+                    state.activeId = state.items.length > 0 ? state.items[0].id : null;
+                    state.activeGroup = null;
+                }
+                // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+                delete state.membersByGroupId[action.payload];
+            })
             // Create Settlement
             .addCase(createSettlement.pending, (state) => {
                 state.isLoading = true;
@@ -413,6 +438,7 @@ export const {
     socketExpenseDeleted,
     socketSettlementAdded,
     socketMemberJoined,
+    socketMemberLeft,
     socketGroupUpdated,
 } = groupSlice.actions;
 export default groupSlice.reducer;
