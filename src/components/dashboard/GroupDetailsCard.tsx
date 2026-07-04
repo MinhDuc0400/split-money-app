@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import type { Member } from '../../types/member.types';
+import { Avatar } from '../Avatar';
 
 interface GroupDetailsCardProps {
     members: Member[];
@@ -36,9 +37,7 @@ export function GroupDetailsCard({ members, expenseCount, onViewDetails }: Group
             <div className="flex items-center gap-4">
                 <div className="flex -space-x-3">
                     {members.slice(0, 5).map(m => (
-                        <div key={m.id} className="w-10 h-10 rounded-full border-2 border-card overflow-hidden">
-                            <img src={m.avatar} alt={m.name} className="w-full h-full object-cover" />
-                        </div>
+                        <Avatar key={m.id} name={m.name} src={m.avatar} className="border-2 border-card" />
                     ))}
                     {members.length > 5 && (
                         <div className="w-10 h-10 rounded-full border-2 border-card bg-secondary flex items-center justify-center text-xs font-bold text-muted-foreground">
