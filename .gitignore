@@ -33,3 +33,6 @@ dist-ssr
 .agents/
 .junie/
 skills-lock.json
+
+graphify-out/
+.claude/settings.local.json
