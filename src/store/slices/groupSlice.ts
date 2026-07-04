@@ -403,8 +403,16 @@ const groupSlice = createSlice({
                 state.error = action.error.message || 'Failed to fetch group balances';
             })
             // Fetch Balance Summary (cross-group totals)
+            .addCase(fetchBalanceSummary.pending, (state) => {
+                state.isLoading = true;
+            })
             .addCase(fetchBalanceSummary.fulfilled, (state, action) => {
+                state.isLoading = false;
                 state.balanceSummary = action.payload.byCurrency;
+            })
+            .addCase(fetchBalanceSummary.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to fetch balance summary';
             })
             // Leave Group
             .addCase(leaveGroupApi.fulfilled, (state, action) => {
