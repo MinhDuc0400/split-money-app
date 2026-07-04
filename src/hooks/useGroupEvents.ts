@@ -66,9 +66,10 @@ export function useGroupEvents(groupId: string) {
 
         if (socket.connected) {
             joinGroup();
-        } else {
-            socket.once('connect', joinGroup);
         }
+        // Use `on` (not `once`) so the room is rejoined after every
+        // socket.io auto-reconnect, not just the first connect.
+        socket.on('connect', joinGroup);
 
         socket.on('expense_created', onExpenseCreated);
         socket.on('expense_updated', onExpenseUpdated);
