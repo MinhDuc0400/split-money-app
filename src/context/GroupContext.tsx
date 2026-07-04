@@ -10,7 +10,7 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
     fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary, leaveGroupApi
 } from '../store/slices/groupSlice';
-import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
+import { deleteGroupData, removeMember, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
 interface GroupContextType {
     // Current Group Data
@@ -105,7 +105,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
 
     const handleRemoveMember = (id: string) => {
         if (!activeGroupId) return;
-        dispatch(removeMemberAndRedistribute({ groupId: activeGroupId, memberId: id }));
+        dispatch(removeMember({ groupId: activeGroupId, memberId: id }));
     };
 
     const handleRemoveMemberAndRedistribute = (id: string) => {

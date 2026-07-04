@@ -15,6 +15,19 @@ const financeSlice = createSlice({
     name: 'finance',
     initialState,
     reducers: {
+        // Plain removal: drops the member's own splits without touching
+        // anyone else's amounts or the expense's splitType. Use this when
+        // the member has no outstanding balance, so nothing needs redistributing.
+        removeMember: (state, action: PayloadAction<{ groupId: string; memberId: string }>) => {
+            const { groupId, memberId } = action.payload;
+            if (!state.expenses[groupId]) return;
+            state.expenses[groupId] = state.expenses[groupId].map(expense => {
+                if (!expense.splits.some(s => s.memberId === memberId)) return expense;
+                return { ...expense, splits: expense.splits.filter(s => s.memberId !== memberId) };
+            });
+        },
+        // Redistribution: used when the member being removed has an
+        // outstanding balance that must be reallocated across the rest.
         removeMemberAndRedistribute: (state, action: PayloadAction<{ groupId: string; memberId: string }>) => {
             const { groupId, memberId } = action.payload;
             if (!state.expenses[groupId]) return;
@@ -64,7 +77,7 @@ const financeSlice = createSlice({
 });
 
 export const {
-    removeMemberAndRedistribute,
+    removeMember, removeMemberAndRedistribute,
     addExpense, updateExpense, deleteExpense, deleteGroupData
 } = financeSlice.actions;
 
