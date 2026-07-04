@@ -33,7 +33,7 @@ export function EditExpenseModal({ isOpen, initialData, onClose, onSubmit, isSub
                         className="bg-card w-full max-w-md rounded-t-2xl sm:rounded-2xl p-6 relative z-10 max-h-[90vh] overflow-y-auto"
                     >
                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-xl font-bold">Edit Expense</h2>
+                            <h2 className="text-xl font-bold">Edit expense</h2>
                             <button onClick={onClose} className="p-2 hover:bg-secondary rounded-full transaction-colors">
                                 <X className="w-5 h-5" />
                             </button>
@@ -42,7 +42,7 @@ export function EditExpenseModal({ isOpen, initialData, onClose, onSubmit, isSub
                         <ExpenseForm
                             initialData={initialData}
                             onSubmit={onSubmit}
-                            submitLabel="Update Expense"
+                            submitLabel="Save changes"
                             isSubmitting={isSubmitting}
                         />
                     </motion.div>

@@ -43,13 +43,13 @@ export function AddExpense({ onClose }: { onClose: () => void }) {
             >
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex flex-col">
-                        <h2 className="text-xl font-bold">New Expense</h2>
+                        <h2 className="text-xl font-bold">Add expense</h2>
                         {selectedGroupId && (
                             <button
                                 onClick={() => setSelectedGroupId(null)}
                                 className="text-xs text-primary hover:underline self-start mt-0.5"
                             >
-                                Change Group
+                                Change group
                             </button>
                         )}
                     </div>

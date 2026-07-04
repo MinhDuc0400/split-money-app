@@ -134,7 +134,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-primary/5 hover:text-primary border border-dashed border-border/50 mt-1 transition-all group"
                         >
                             <PlusCircle className="w-4 h-4" />
-                            <span className="font-medium">New / Join Group</span>
+                            <span className="font-medium">Create or join group</span>
                         </button>
                     </div>
 
@@ -166,7 +166,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                     <ThemeToggle />
                     {groups.length > 0 && (
                         <button onClick={onAddExpense} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90">
-                            <PlusCircle className="w-4 h-4" /> Add Expense
+                            <PlusCircle className="w-4 h-4" /> Add expense
                         </button>
                     )}
                 </div>
