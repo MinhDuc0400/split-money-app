@@ -1,39 +1,57 @@
 import { useState } from 'react';
 import { useGroup } from '../context/GroupContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { AddMemberForm } from './member-manager/AddMemberForm';
+import { AddGuestForm } from './member-manager/AddGuestForm';
 import { MemberListItem } from './member-manager/MemberListItem';
-import { RemoveConfirmDialog } from './member-manager/RemoveConfirmDialog';
 import { ResetConfirmDialog } from './member-manager/ResetConfirmDialog';
-import { isBalanceSettled } from '../lib/accounting';
+import { InvitationBox } from './group-detail/InvitationBox';
+
+function errorMessage(err: unknown, fallback: string): string {
+    if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
+        return (err as { message: string }).message;
+    }
+    return fallback;
+}
 
 export function MemberManager() {
-    const { members, balances, addMember, updateMemberName, removeMember, removeMemberAndRedistribute, resetGroup } = useGroup();
+    const { members, balances, activeGroup, addMember, updateMemberName, removeMember, resetGroup } = useGroup();
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [removeCandidate, setRemoveCandidate] = useState<string | null>(null);
+    const [isRemoving, setIsRemoving] = useState(false);
+    const [actionError, setActionError] = useState<string | null>(null);
 
-    const handleRemoveClick = (id: string, e: React.MouseEvent) => {
-        e.stopPropagation();
-        
-        // Check if member has any non-zero balance in any currency
-        const hasBalance = Object.values(balances).some(currencyBalances => {
-            const balance = currencyBalances[id] || 0;
-            return !isBalanceSettled(balance);
-        });
-
-        // If balance is effectively zero in all currencies, just remove
-        if (!hasBalance) {
-            removeMember(id);
-        } else {
-            // Trigger smart removal dialog
-            setRemoveCandidate(id);
+    const handleAddGuest = async (name: string) => {
+        setActionError(null);
+        try {
+            await addMember(name);
+        } catch (err) {
+            setActionError(errorMessage(err, "That guest couldn't be added. Try again."));
         }
     };
 
-    const handleConfirmRemove = () => {
+    const handleRename = async (id: string, name: string) => {
+        setActionError(null);
+        try {
+            await updateMemberName(id, name);
+        } catch (err) {
+            setActionError(errorMessage(err, "That name couldn't be saved. Try again."));
+        }
+    };
+
+    const handleConfirmRemove = async () => {
         if (!removeCandidate) return;
-        removeMemberAndRedistribute(removeCandidate);
-        setRemoveCandidate(null);
+        setIsRemoving(true);
+        setActionError(null);
+        try {
+            await removeMember(removeCandidate);
+        } catch (err) {
+            // The backend's 403 message ("This guest has an unsettled balance. Settle up
+            // before removing them.") is already in content voice — show it as-is.
+            setActionError(errorMessage(err, "That guest couldn't be removed. Try again."));
+        } finally {
+            setIsRemoving(false);
+            setRemoveCandidate(null);
+        }
     };
 
     const handleReset = () => {
@@ -42,21 +60,35 @@ export function MemberManager() {
     };
 
     const candidateName = members.find(m => m.id === removeCandidate)?.name || '';
-    const candidateBalances = removeCandidate 
-        ? Object.entries(balances)
-            .map(([curr, currencyBalances]) => ({ currency: curr, balance: currencyBalances[removeCandidate] || 0 }))
-            .filter(({ balance }) => !isBalanceSettled(balance))
-        : [];
 
     return (
         <div className="space-y-6">
+            {actionError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{actionError}</p>
+                    <button onClick={() => { setActionError(null); }} aria-label="Dismiss error" className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
+                </div>
+            )}
+
+            {/* Add people — two paths: real members join with the invite code, guests are added by name */}
+            <div className="bg-card rounded-xl p-6 shadow-sm border border-border/50 space-y-6">
+                <h2 className="text-lg font-semibold">Add people</h2>
+
+                <div className="space-y-2">
+                    <h3 className="text-sm font-medium">Invite someone with the app</h3>
+                    <p className="text-xs text-muted-foreground">They sign in with Google and join with this code.</p>
+                    {activeGroup?.inviteCode && <InvitationBox inviteCode={activeGroup.inviteCode} />}
+                </div>
+
+                <div className="border-t border-border pt-5 space-y-2">
+                    <h3 className="text-sm font-medium">Add a guest</h3>
+                    <p className="text-xs text-muted-foreground">Guests don't need an account. You track their share for them.</p>
+                    <AddGuestForm onAddGuest={handleAddGuest} />
+                </div>
+            </div>
+
             <div className="bg-card rounded-xl p-6 shadow-sm border border-border/50">
-                <h2 className="text-lg font-semibold mb-4">Group Members</h2>
-
-                {/* addMember/updateMemberName have no backing API yet (see GroupContext);
-                    disable rather than silently no-op on submit. */}
-                <AddMemberForm onAddMember={addMember} disabled />
-
+                <h2 className="text-lg font-semibold mb-4">Group members</h2>
                 <div className="space-y-2">
                     <AnimatePresence>
                         {members.length === 0 && (
@@ -66,7 +98,7 @@ export function MemberManager() {
                                 exit={{ opacity: 0 }}
                                 className="text-center py-8 text-muted-foreground text-sm"
                             >
-                                No members yet. Add someone to start splitting!
+                                Share the invite code or add a guest to start splitting expenses.
                             </motion.div>
                         )}
 
@@ -75,34 +107,58 @@ export function MemberManager() {
                                 key={member.id}
                                 member={member}
                                 balances={balances}
-                                onUpdateName={updateMemberName}
-                                onRemove={handleRemoveClick}
-                                renameDisabled
+                                onUpdateName={handleRename}
+                                onRemove={(id) => { setRemoveCandidate(id); }}
                             />
                         ))}
                     </AnimatePresence>
                 </div>
             </div>
 
-            {/* Remove Candidate Dialog */}
-            <RemoveConfirmDialog
-                isOpen={!!removeCandidate}
-                memberName={candidateName}
-                balances={candidateBalances}
-                onConfirm={handleConfirmRemove}
-                onCancel={() => { setRemoveCandidate(null); }}
-            />
+            {/* Guest remove confirmation */}
+            <AnimatePresence>
+                {removeCandidate && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => { setRemoveCandidate(null); }} />
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.95 }}
+                            className="bg-card w-full max-w-sm rounded-2xl p-6 relative z-10 border border-border/50 shadow-2xl space-y-4"
+                        >
+                            <h3 className="text-lg font-semibold">Remove {candidateName}?</h3>
+                            <p className="text-sm text-muted-foreground">Their past expenses stay in the history.</p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => { setRemoveCandidate(null); }}
+                                    disabled={isRemoving}
+                                    className="flex-1 py-3 rounded-xl border border-border text-sm font-semibold hover:bg-secondary transition-colors disabled:opacity-50"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => { void handleConfirmRemove(); }}
+                                    disabled={isRemoving}
+                                    className="flex-1 py-3 rounded-xl bg-destructive text-destructive-foreground text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
+                                >
+                                    {isRemoving ? 'Removing…' : 'Remove guest'}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
-            {/* Danger Zone */}
+            {/* Danger zone */}
             <div className="bg-card rounded-xl p-6 shadow-sm border border-border/50">
-                <h3 className="text-sm font-semibold text-destructive uppercase tracking-wider mb-4">Danger Zone</h3>
+                <h3 className="text-sm font-semibold text-destructive uppercase tracking-wider mb-4">Danger zone</h3>
 
                 {!showResetConfirm ? (
                     <button
                         onClick={() => { setShowResetConfirm(true); }}
                         className="w-full border border-destructive/50 text-destructive hover:bg-destructive/10 py-3 rounded-lg text-sm font-medium transition-colors"
                     >
-                        Reset All App Data
+                        Reset all app data
                     </button>
                 ) : (
                     <ResetConfirmDialog
