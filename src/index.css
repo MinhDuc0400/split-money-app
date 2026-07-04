@@ -40,11 +40,11 @@
     --radius: 1rem;
 
     /* 💰 Financial semantics */
-    --positive: 158 36% 42%;
+    --positive: 158 36% 36%;
     /* user is owed */
-    --negative: 12 68% 52%;
+    --negative: 12 68% 42%;
     /* user owes */
-    --warning: 45 93% 47%;
+    --warning: 45 93% 29%;
     /* almost balanced / warnings */
   }
 
