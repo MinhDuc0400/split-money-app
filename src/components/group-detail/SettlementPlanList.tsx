@@ -57,9 +57,9 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                                     {onSettle && currentMemberId === tx.from.memberId && (
                                         <button
                                             onClick={() => onSettle(tx)}
-                                            className="px-3 py-1 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-full text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                                            className="px-3 py-1.5 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-full text-xs font-semibold transition-all active:scale-95"
                                         >
-                                            Settle
+                                            Record payment
                                         </button>
                                     )}
                                 </div>
