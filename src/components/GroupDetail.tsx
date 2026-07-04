@@ -12,6 +12,7 @@ import { EditExpenseModal } from './group-detail/EditExpenseModal';
 import { DeleteConfirmationModal } from './group-detail/DeleteConfirmationModal';
 import { SettleUpModal } from './group-detail/SettleUpModal';
 import { InvitationBox } from './group-detail/InvitationBox';
+import { AddExpense } from './AddExpense';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector } from '../store/hooks';
@@ -50,6 +51,7 @@ export function GroupDetail() {
     const [leaveError, setLeaveError] = useState<string | null>(null);
     const [isDeletingGroup, setIsDeletingGroup] = useState(false);
     const [deleteGroupError, setDeleteGroupError] = useState<string | null>(null);
+    const [isAddingExpense, setIsAddingExpense] = useState(false);
 
     // Fetch group details on mount or ID change
     useEffect(() => {
@@ -179,7 +181,7 @@ export function GroupDetail() {
     const handleLeaveGroup = async () => {
         if (!activeGroup) return;
         if (!isSettledUp) {
-            setLeaveError('You have unsettled balances. Please settle up before leaving the group.');
+            setLeaveError('You have an unsettled balance. Settle up before leaving the group.');
             return;
         }
         setIsLeavingGroup(true);
@@ -197,7 +199,7 @@ export function GroupDetail() {
     const handleDeleteGroup = async () => {
         if (!activeGroup) return;
         if (!isGroupFullySettled) {
-            setDeleteGroupError('All members must settle their balances before the group can be deleted.');
+            setDeleteGroupError("Balances aren't settled. Everyone needs to settle up before the group can be deleted.");
             return;
         }
         setIsDeletingGroup(true);
@@ -356,6 +358,7 @@ export function GroupDetail() {
                     getMemberName={getMemberName}
                     onEdit={handleEditClick}
                     onDelete={handleDeleteClick}
+                    onAddExpense={() => { setIsAddingExpense(true); }}
                 />
             </div>
 
@@ -393,6 +396,8 @@ export function GroupDetail() {
                     isLoading={isSettling}
                 />
             )}
+
+            {isAddingExpense && <AddExpense onClose={() => { setIsAddingExpense(false); }} />}
         </div>
     );
 }

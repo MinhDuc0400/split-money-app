@@ -82,7 +82,7 @@ export function AddExpense({ onClose }: { onClose: () => void }) {
 
                             <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                                 {filteredGroups.length === 0 ? (
-                                    <p className="text-center py-8 text-sm text-muted-foreground italic">No groups found</p>
+                                    <p className="text-center py-8 text-sm text-muted-foreground italic">No groups match your search.</p>
                                 ) : (
                                     filteredGroups.map(group => (
                                         <button

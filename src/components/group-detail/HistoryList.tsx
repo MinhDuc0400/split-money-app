@@ -1,5 +1,7 @@
 import React, { useMemo } from 'react';
+import { Receipt } from 'lucide-react';
 import { HistoryItem } from './HistoryItem';
+import { EmptyState } from '../ui/EmptyState';
 import { groupExpensesByMonth } from '../../lib/accounting';
 import type { Expense, TransactionHistoryMap, HistoryTransaction } from '../../types/expense.types';
 
@@ -10,6 +12,7 @@ interface HistoryListProps {
     getMemberName: (id: string) => string;
     onEdit: (id: string) => void;
     onDelete: (id: string) => void;
+    onAddExpense?: () => void;
 }
 
 export const HistoryList: React.FC<HistoryListProps> = ({
@@ -19,6 +22,7 @@ export const HistoryList: React.FC<HistoryListProps> = ({
     getMemberName,
     onEdit,
     onDelete,
+    onAddExpense,
 }) => {
     const groupedTransactions = useMemo(() => {
         if (transactions && Object.keys(transactions).length > 0) {
@@ -31,8 +35,14 @@ export const HistoryList: React.FC<HistoryListProps> = ({
 
     if (!months.length && expenses.length === 0) {
         return (
-            <div className="bg-card rounded-3xl border border-border/50 p-12 text-center">
-                <p className="text-muted-foreground">No history yet. Add an expense to get started!</p>
+            <div className="bg-card rounded-3xl border border-border/50">
+                <EmptyState
+                    icon={Receipt}
+                    headline="No expenses yet"
+                    body="Add the first expense and Money Split does the math for everyone."
+                    actionLabel={onAddExpense ? 'Add expense' : undefined}
+                    onAction={onAddExpense}
+                />
             </div>
         );
     }
