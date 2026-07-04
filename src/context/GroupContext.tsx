@@ -8,9 +8,9 @@ import { calculateBalances, calculateSettlements } from '../lib/accounting';
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary, leaveGroupApi
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary, leaveGroupApi, addGuest, renameGuest, removeGuest
 } from '../store/slices/groupSlice';
-import { deleteGroupData, removeMember, removeMemberAndRedistribute } from '../store/slices/financeSlice';
+import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
 interface GroupContextType {
     // Current Group Data
@@ -30,9 +30,9 @@ interface GroupContextType {
 
     // Group Actions
     fetchGroupById: (id: string) => Promise<void>;
-    addMember: (name: string) => void;
-    updateMemberName: (id: string, name: string) => void;
-    removeMember: (id: string) => void;
+    addMember: (name: string) => Promise<void>;
+    updateMemberName: (id: string, name: string) => Promise<void>;
+    removeMember: (id: string) => Promise<void>;
     removeMemberAndRedistribute: (id: string) => void;
     addExpense: (data: CreateExpenseRequest) => Promise<void>;
     updateExpense: (id: string, expenseData: UpdateExpenseRequest) => void;
@@ -72,9 +72,10 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
             return activeGroup.members.map(m => ({
                 id: m.id,
                 name: m.name,
-                avatar: m.avatarUrl,
-                userId: m.userId,
-                role: m.role
+                avatar: m.avatarUrl ?? undefined,
+                userId: m.userId ?? undefined,
+                role: m.role,
+                isGuest: m.isGuest ?? false
             }));
         }
         return allMembers[activeGroupId || ''] || [];
@@ -99,13 +100,19 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
 
     // --- Actions ---
 
-    // TODO: wire to API — member mutations are not yet backed by a REST endpoint
-    const handleAddMember = (_name: string) => { /* no-op until API exists */ };
-    const handleUpdateMemberName = (_id: string, _name: string) => { /* no-op until API exists */ };
-
-    const handleRemoveMember = (id: string) => {
+    const handleAddMember = async (name: string) => {
         if (!activeGroupId) return;
-        dispatch(removeMember({ groupId: activeGroupId, memberId: id }));
+        await dispatch(addGuest({ groupId: activeGroupId, name })).unwrap();
+    };
+
+    const handleUpdateMemberName = async (id: string, name: string) => {
+        if (!activeGroupId) return;
+        await dispatch(renameGuest({ groupId: activeGroupId, guestId: id, name })).unwrap();
+    };
+
+    const handleRemoveMember = async (id: string) => {
+        if (!activeGroupId) return;
+        await dispatch(removeGuest({ groupId: activeGroupId, guestId: id })).unwrap();
     };
 
     const handleRemoveMemberAndRedistribute = (id: string) => {

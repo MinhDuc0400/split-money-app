@@ -20,10 +20,11 @@ export interface GroupMeta {
 export interface GroupMember {
     id: string;
     groupId: string;
-    userId: string;
+    userId: string | null;
     name: string;
-    avatarUrl: string;
+    avatarUrl: string | null;
     role: string;
+    isGuest: boolean;
     joinedAt: string;
     deletedAt: string | null;
 }
