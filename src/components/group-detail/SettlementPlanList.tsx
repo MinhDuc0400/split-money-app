@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { formatAmount } from '../../lib/currency';
 import type { GroupSettlement } from '../../types/group.types';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 
 interface SettlementPlanListProps {
     settlements: GroupSettlement[];
@@ -8,9 +10,10 @@ interface SettlementPlanListProps {
     getMemberAvatar: (id: string) => string | undefined;
     onSettle?: (settlement: GroupSettlement) => void;
     currentMemberId?: string;
+    isGuestMember?: (id: string) => boolean;
 }
 
-export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar, onSettle, currentMemberId }: SettlementPlanListProps) {
+export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar, onSettle, currentMemberId, isGuestMember }: SettlementPlanListProps) {
     return (
         <div className="bg-card rounded-2xl border border-border/50 shadow-sm p-6">
             <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
@@ -37,16 +40,20 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                                 className="flex items-center justify-between p-3 rounded-lg hover:bg-secondary/30 transition-colors"
                             >
                                 <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden">
-                                        <img src={fromAvatar} alt="" className="w-full h-full object-cover" />
-                                    </div>
+                                    <Avatar name={fromName} src={fromAvatar} />
                                     <div className="text-sm">
-                                        <div className="font-semibold">{fromName}</div>
-                                        <div className="text-muted-foreground text-xs">pays {toName}</div>
+                                        <div className="font-semibold flex items-center gap-2">
+                                            {fromName}
+                                            {isGuestMember?.(tx.from.memberId) && <GuestTag />}
+                                        </div>
+                                        <div className="text-muted-foreground text-xs flex items-center gap-1.5">
+                                            pays {toName}
+                                            {isGuestMember?.(tx.to.memberId) && <GuestTag />}
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
-                                    <div className="font-bold text-lg text-primary">{formatAmount(tx.amount, tx.currency)}</div>
+                                    <div className="font-bold text-lg text-primary tabular-nums">{formatAmount(tx.amount, tx.currency)}</div>
                                     {onSettle && currentMemberId === tx.from.memberId && (
                                         <button
                                             onClick={() => onSettle(tx)}

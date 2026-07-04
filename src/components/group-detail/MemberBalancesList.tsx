@@ -3,6 +3,8 @@ import { formatAmount } from '../../lib/currency';
 import { isBalanceSettled } from '../../lib/accounting';
 import type { Member } from '../../types/member.types';
 import type { GroupBalancesResponse } from '../../types/group.types';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 
 interface MemberBalancesListProps {
     members: Member[];
@@ -28,11 +30,9 @@ export function MemberBalancesList({ members, serverBalances }: MemberBalancesLi
                 return (
                     <div key={member.id} className="flex items-center justify-between p-4 hover:bg-secondary/20 transition-colors">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-full ring-2 ring-border/20 bg-secondary overflow-hidden shrink-0">
-                                <img src={member.avatar} alt={member.name} className="h-full w-full object-cover" />
-                            </div>
+                            <Avatar name={member.name} src={member.avatar} className="w-12 h-12 ring-2 ring-border/20" />
                             <div>
-                                <p className="font-bold text-foreground">{member.name}</p>
+                                <p className="font-bold text-foreground flex items-center gap-2">{member.name}{member.isGuest && <GuestTag />}</p>
                                 {memberCurrencyBalances.length === 0 && (
                                     <p className="text-xs text-muted-foreground italic">Settled up</p>
                                 )}
@@ -44,7 +44,7 @@ export function MemberBalancesList({ members, serverBalances }: MemberBalancesLi
                                 <div
                                     key={curr}
                                     className={cn(
-                                        "text-sm font-bold",
+                                        "text-sm font-bold tabular-nums",
                                         balance > 0 ? "text-positive" : "text-negative"
                                     )}
                                 >

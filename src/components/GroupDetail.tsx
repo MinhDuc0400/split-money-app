@@ -347,6 +347,7 @@ export function GroupDetail() {
                         getMemberAvatar={getMemberAvatar}
                         onSettle={handleSettleClick}
                         currentMemberId={currentUserMember?.id}
+                        isGuestMember={(id) => memberMap[id]?.isGuest ?? false}
                     />
                 </div>
             </div>

@@ -1,6 +1,8 @@
 import React, { useMemo } from 'react';
 import { cn } from '../../lib/utils';
 import type { Member } from '../../types/member.types';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 
 interface SplitSharesProps {
     members: Member[];
@@ -13,10 +15,8 @@ export function SplitShares({ members, shares, setShares }: SplitSharesProps) {
         <div className="space-y-3 bg-secondary/20 p-4 rounded-xl">
             {members.map(member => (
                 <div key={member.id} className="flex items-center gap-3">
-                    <div className="w-6 h-6 rounded-full overflow-hidden">
-                        <img src={member.avatar} alt={member.name} />
-                    </div>
-                    <span className="flex-1 text-sm">{member.name}</span>
+                    <Avatar name={member.name} src={member.avatar} className="w-6 h-6" />
+                    <span className="flex-1 text-sm flex items-center gap-2">{member.name}{member.isGuest && <GuestTag />}</span>
                     <div className="relative w-28">
                         <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">#</span>
                         <input

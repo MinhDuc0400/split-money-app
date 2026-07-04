@@ -2,6 +2,8 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import type { Member } from '../../types/member.types';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 
 interface SplitEvenProps {
     members: Member[];
@@ -30,10 +32,8 @@ export function SplitEven({ members, included, setIncluded, equalEach }: SplitEv
                             onChange={(e) => { setIncluded(prev => ({ ...prev, [member.id]: e.target.checked })); }}
                             className="hidden"
                         />
-                        <div className="w-6 h-6 rounded-full overflow-hidden">
-                            <img src={member.avatar} alt={member.name} />
-                        </div>
-                        <span className="flex-1 text-sm">{member.name}</span>
+                        <Avatar name={member.name} src={member.avatar} className="w-6 h-6" />
+                        <span className="flex-1 text-sm flex items-center gap-2">{member.name}{member.isGuest && <GuestTag />}</span>
                     </label>
                 ))}
             </div>

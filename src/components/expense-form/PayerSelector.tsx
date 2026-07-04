@@ -1,5 +1,7 @@
 import { cn } from '../../lib/utils';
 import type { Member } from '../../types/member.types';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 
 interface PayerSelectorProps {
     members: Member[];
@@ -23,10 +25,9 @@ export function PayerSelector({ members, payerId, setPayerId }: PayerSelectorPro
                                 : "bg-transparent border-transparent hover:bg-secondary/50"
                         )}
                     >
-                        <div className="w-8 h-8 rounded-full bg-secondary overflow-hidden">
-                            <img src={member.avatar} alt={member.name} />
-                        </div>
+                        <Avatar name={member.name} src={member.avatar} className="w-8 h-8" />
                         <span className="text-xs font-medium truncate w-full text-center">{member.name}</span>
+                        {member.isGuest && <GuestTag />}
                     </button>
                 ))}
             </div>
