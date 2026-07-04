@@ -152,15 +152,17 @@ export function GroupDetail() {
         }
     };
 
+    // Default to "not settled" (blocking) until real balance data has loaded,
+    // rather than optimistically allowing leave/delete on incomplete data.
     const isSettledUp = useMemo(() => {
-        if (!currentUserBalance) return true;
+        if (!currentUserBalance) return false;
         return Object.values(currentUserBalance.balances).every(
             b => b.totalOwed < 0.01 && b.totalOwe < 0.01
         );
     }, [currentUserBalance]);
 
     const isGroupFullySettled = useMemo(() => {
-        if (!groupBalances) return true;
+        if (!groupBalances) return false;
         return Object.values(groupBalances).every(members =>
             members.every(m => Math.abs(m.balance) < 0.01)
         );
