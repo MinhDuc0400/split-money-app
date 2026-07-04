@@ -47,6 +47,7 @@ function toMember(m: GroupMember): Member {
         name: m.name,
         avatar: m.avatarUrl ?? undefined,
         userId: m.userId ?? undefined,
+        role: m.role,
     };
 }
 

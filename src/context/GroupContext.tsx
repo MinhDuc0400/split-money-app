@@ -73,7 +73,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 id: m.id,
                 name: m.name,
                 avatar: m.avatarUrl,
-                userId: m.userId
+                userId: m.userId,
+                role: m.role
             }));
         }
         return allMembers[activeGroupId || ''] || [];

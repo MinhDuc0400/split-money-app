@@ -3,4 +3,5 @@ export interface Member {
     name: string;
     avatar?: string; // URL or emoji
     userId?: string;
+    role?: string;
 }
