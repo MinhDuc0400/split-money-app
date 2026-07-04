@@ -35,7 +35,7 @@ export const InvitationBox: React.FC<InvitationBoxProps> = ({ inviteCode }) => {
                         className="flex items-center gap-2"
                     >
                         <Check className="w-3.5 h-3.5 text-positive" />
-                        <span className="text-xs font-bold text-positive">Copied!</span>
+                        <span className="text-xs font-bold text-positive">Copied</span>
                     </motion.div>
                 ) : (
                     <motion.div
