@@ -50,6 +50,6 @@ Each step shows a slim progress indicator (4 dots, not a percentage bar — this
 
 ## Sequencing
 
-1. **This turn:** concept + plan (this doc) + mockups for the four most representative screens (Onboarding, Global Dashboard, Add Expense flow, Group Detail).
-2. **Next, after your feedback:** mockups for the remaining screens (Member Management with guest flow, Settle Up, empty/error states) if the direction lands.
-3. **After mockup approval:** a proper implementation plan (file/component structure, backend endpoints needed for guests, migration path from the current single-form Add Expense to the stepped flow) via the same plan-and-execute process used earlier this session.
+1. **Done:** concept + plan (this doc) + mockups for Onboarding, Global Dashboard, Add Expense flow, Group Detail.
+2. **Done:** mockups for the remaining screens — Member Management with the guest-invite split, Settle Up, and empty/error/loading states.
+3. **Next, after your feedback:** a proper implementation plan (file/component structure, backend endpoints needed for guests, migration path from the current single-form Add Expense to the stepped flow) via the same plan-and-execute process used earlier this session.
