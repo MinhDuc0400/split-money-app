@@ -283,7 +283,7 @@ export function GroupDetail() {
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
-                            {isDeletingGroup ? 'Deleting...' : 'Delete Group'}
+                            {isDeletingGroup ? 'Deleting…' : 'Delete group'}
                         </button>
                     ) : (
                         <button
@@ -292,7 +292,7 @@ export function GroupDetail() {
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
                         >
                             <LogOut className="w-3.5 h-3.5" />
-                            {isLeavingGroup ? 'Leaving...' : 'Quit Group'}
+                            {isLeavingGroup ? 'Leaving…' : 'Leave group'}
                         </button>
                     )}
                 </div>
@@ -312,50 +312,41 @@ export function GroupDetail() {
                 </div>
             )}
 
-            {/* Main Content Splitwise-style */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Column: Balances & Members */}
-                <div className="lg:col-span-8 space-y-8">
-                    {/* Your Balance Summary - Compact */}
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                            <BalanceCard type="owed" balances={owedToYou} />
-                        </div>
-                        <div className="flex-1">
-                            <BalanceCard type="owing" balances={youOwe} />
-                        </div>
-                    </div>
+            {/* Settlement plan first — it answers "what do I do now" */}
+            <SettlementPlanList
+                settlements={settlementPlan}
+                getMemberName={getMemberName}
+                getMemberAvatar={getMemberAvatar}
+                isGuestMember={(id) => memberMap[id]?.isGuest ?? false}
+                onSettle={handleSettleClick}
+                currentMemberId={currentUserMember?.id}
+            />
 
-                    {/* Member Balances List (Splitwise style) */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-2">
-                            <div className="flex items-center gap-2">
-                                <Users className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold text-lg">Group Balances</h3>
-                            </div>
-                        </div>
-
-                        <MemberBalancesList members={members} serverBalances={groupBalances} />
-                    </div>
+            {/* Your balance summary */}
+            <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                    <BalanceCard type="owed" balances={owedToYou} />
                 </div>
-
-                {/* Right Column: Settlements */}
-                <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
-                    <SettlementPlanList
-                        settlements={settlementPlan}
-                        getMemberName={getMemberName}
-                        getMemberAvatar={getMemberAvatar}
-                        onSettle={handleSettleClick}
-                        currentMemberId={currentUserMember?.id}
-                        isGuestMember={(id) => memberMap[id]?.isGuest ?? false}
-                    />
+                <div className="flex-1">
+                    <BalanceCard type="owing" balances={youOwe} />
                 </div>
             </div>
 
-            {/* History Section */}
+            {/* Member balances */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary" />
+                        <h3 className="font-bold text-lg">Group balances</h3>
+                    </div>
+                </div>
+                <MemberBalancesList members={members} serverBalances={groupBalances} />
+            </div>
+
+            {/* History */}
             <div className="space-y-6">
                 <div className="flex items-center justify-between px-2">
-                    <h2 className="text-2xl font-bold italic tracking-tight">Payment History</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Payment history</h2>
                 </div>
 
                 <HistoryList
