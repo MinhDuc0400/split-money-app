@@ -146,7 +146,10 @@ export function GroupSelector({ className }: { className?: string }) {
                                                                     onClick={(e) => {
                                                                         e.stopPropagation();
                                                                         if (confirm(`Delete group "${group.name}"? This cannot be undone.`)) {
-                                                                            deleteGroup(group.id);
+                                                                            deleteGroup(group.id).catch((err: unknown) => {
+                                                                                const message = err instanceof Error ? err.message : 'Failed to delete group';
+                                                                                alert(message);
+                                                                            });
                                                                         }
                                                                     }}
                                                                     className="p-1 text-muted-foreground hover:text-destructive"
