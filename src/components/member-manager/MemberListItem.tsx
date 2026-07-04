@@ -10,9 +10,10 @@ interface MemberListItemProps {
     balances: Record<string, Record<string, number>>;
     onUpdateName: (id: string, name: string) => void;
     onRemove: (id: string, e: React.MouseEvent) => void;
+    renameDisabled?: boolean;
 }
 
-export function MemberListItem({ member, balances, onUpdateName, onRemove }: MemberListItemProps) {
+export function MemberListItem({ member, balances, onUpdateName, onRemove, renameDisabled }: MemberListItemProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(member.name);
 
@@ -78,12 +79,14 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove }: Mem
                             />
                         </div>
                         <span className="font-medium text-sm">{member.name}</span>
-                        <button
-                            onClick={handleStartEdit}
-                            className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-primary transition-all"
-                        >
-                            <Pencil className="w-3 h-3" />
-                        </button>
+                        {!renameDisabled && (
+                            <button
+                                onClick={handleStartEdit}
+                                className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-primary transition-all"
+                            >
+                                <Pencil className="w-3 h-3" />
+                            </button>
+                        )}
                     </div>
 
                     <div className="flex items-center gap-4">

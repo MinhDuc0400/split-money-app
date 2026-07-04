@@ -52,7 +52,9 @@ export function MemberManager() {
             <div className="bg-card rounded-xl p-6 shadow-sm border border-border/50">
                 <h2 className="text-lg font-semibold mb-4">Group Members</h2>
 
-                <AddMemberForm onAddMember={addMember} />
+                {/* addMember/updateMemberName have no backing API yet (see GroupContext);
+                    disable rather than silently no-op on submit. */}
+                <AddMemberForm onAddMember={addMember} disabled />
 
                 <div className="space-y-2">
                     <AnimatePresence>
@@ -74,6 +76,7 @@ export function MemberManager() {
                                 balances={balances}
                                 onUpdateName={updateMemberName}
                                 onRemove={handleRemoveClick}
+                                renameDisabled
                             />
                         ))}
                     </AnimatePresence>
