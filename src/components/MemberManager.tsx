@@ -5,6 +5,7 @@ import { AddMemberForm } from './member-manager/AddMemberForm';
 import { MemberListItem } from './member-manager/MemberListItem';
 import { RemoveConfirmDialog } from './member-manager/RemoveConfirmDialog';
 import { ResetConfirmDialog } from './member-manager/ResetConfirmDialog';
+import { isBalanceSettled } from '../lib/accounting';
 
 export function MemberManager() {
     const { members, balances, addMember, updateMemberName, removeMember, removeMemberAndRedistribute, resetGroup } = useGroup();
@@ -17,7 +18,7 @@ export function MemberManager() {
         // Check if member has any non-zero balance in any currency
         const hasBalance = Object.values(balances).some(currencyBalances => {
             const balance = currencyBalances[id] || 0;
-            return Math.abs(balance) > 0.01;
+            return !isBalanceSettled(balance);
         });
 
         // If balance is effectively zero in all currencies, just remove
@@ -44,7 +45,7 @@ export function MemberManager() {
     const candidateBalances = removeCandidate 
         ? Object.entries(balances)
             .map(([curr, currencyBalances]) => ({ currency: curr, balance: currencyBalances[removeCandidate] || 0 }))
-            .filter(({ balance }) => Math.abs(balance) > 0.01)
+            .filter(({ balance }) => !isBalanceSettled(balance))
         : [];
 
     return (

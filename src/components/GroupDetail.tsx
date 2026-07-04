@@ -16,7 +16,7 @@ import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector } from '../store/hooks';
 import { type GroupSettlement } from '../types/group.types';
-import { calculateSettlements } from '../lib/accounting';
+import { calculateSettlements, isBalanceSettled } from '../lib/accounting';
 
 export function GroupDetail() {
     const navigate = useNavigate();
@@ -65,10 +65,10 @@ export function GroupDetail() {
             const owing: Array<{ currency: string; amount: number }> = [];
 
             Object.entries(currentUserBalance.balances).forEach(([curr, data]) => {
-                if (data.totalOwed > 0.01) {
+                if (!isBalanceSettled(data.totalOwed)) {
                     owed.push({ currency: curr, amount: data.totalOwed });
                 }
-                if (data.totalOwe > 0.01) {
+                if (!isBalanceSettled(data.totalOwe)) {
                     owing.push({ currency: curr, amount: data.totalOwe });
                 }
             });
@@ -157,14 +157,14 @@ export function GroupDetail() {
     const isSettledUp = useMemo(() => {
         if (!currentUserBalance) return false;
         return Object.values(currentUserBalance.balances).every(
-            b => b.totalOwed < 0.01 && b.totalOwe < 0.01
+            b => isBalanceSettled(b.totalOwed) && isBalanceSettled(b.totalOwe)
         );
     }, [currentUserBalance]);
 
     const isGroupFullySettled = useMemo(() => {
         if (!groupBalances) return false;
         return Object.values(groupBalances).every(members =>
-            members.every(m => Math.abs(m.balance) < 0.01)
+            members.every(m => isBalanceSettled(m.balance))
         );
     }, [groupBalances]);
 

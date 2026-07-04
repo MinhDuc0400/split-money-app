@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { isBalanceSettled } from '../../lib/accounting';
 
 interface BalanceCalculationsProps {
     balances: Record<string, Record<string, number>>;
@@ -13,19 +14,20 @@ export function useBalanceCalculations({ balances }: BalanceCalculationsProps) {
         Object.entries(balances).forEach(([curr, currencyBalances]) => {
             let totalPositive = 0;
             let totalNegative = 0;
-            
+
             Object.values(currencyBalances).forEach(balance => {
-                if (balance > 0.01) {
+                if (isBalanceSettled(balance)) return;
+                if (balance > 0) {
                     totalPositive += balance;
-                } else if (balance < -0.01) {
+                } else {
                     totalNegative += Math.abs(balance);
                 }
             });
 
-            if (totalPositive > 0.01) {
+            if (!isBalanceSettled(totalPositive)) {
                 owedToYou.push({ currency: curr, amount: totalPositive });
             }
-            if (totalNegative > 0.01) {
+            if (!isBalanceSettled(totalNegative)) {
                 youOwe.push({ currency: curr, amount: totalNegative });
             }
         });

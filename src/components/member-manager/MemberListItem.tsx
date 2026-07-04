@@ -3,6 +3,7 @@ import { Trash2, Pencil, X, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { formatAmount } from '../../lib/currency';
+import { isBalanceSettled } from '../../lib/accounting';
 import type { Member } from '../../types/member.types';
 
 interface MemberListItemProps {
@@ -40,7 +41,7 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove, renam
             currency: curr,
             balance: currencyBalances[member.id] || 0
         }))
-        .filter(({ balance }) => Math.abs(balance) > 0.01);
+        .filter(({ balance }) => !isBalanceSettled(balance));
 
     return (
         <motion.div

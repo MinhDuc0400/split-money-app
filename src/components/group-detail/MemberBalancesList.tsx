@@ -1,5 +1,6 @@
 import { cn } from '../../lib/utils';
 import { formatAmount } from '../../lib/currency';
+import { isBalanceSettled } from '../../lib/accounting';
 import type { Member } from '../../types/member.types';
 import type { GroupBalancesResponse } from '../../types/group.types';
 
@@ -18,7 +19,7 @@ export function MemberBalancesList({ members, serverBalances }: MemberBalancesLi
                 if (serverBalances) {
                     Object.entries(serverBalances).forEach(([curr, balanceList]) => {
                         const mBalance = balanceList.find(b => b.memberId === member.id);
-                        if (mBalance && Math.abs(mBalance.balance) > 0.01) {
+                        if (mBalance && !isBalanceSettled(mBalance.balance)) {
                             memberCurrencyBalances.push({ currency: curr, balance: mBalance.balance });
                         }
                     });

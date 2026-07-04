@@ -5,6 +5,7 @@ import { BalanceCard } from './dashboard/BalanceCard';
 import { motion } from 'framer-motion';
 import { Users, ChevronRight } from 'lucide-react';
 import { WelcomeView } from './dashboard/WelcomeView';
+import { isBalanceSettled } from '../lib/accounting';
 
 export const GlobalDashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -13,12 +14,12 @@ export const GlobalDashboard: React.FC = () => {
     // Derive owed/owing from server-side balance summary (accounts for settlements)
     const owedToYou = balanceSummary
         ? Object.entries(balanceSummary)
-            .filter(([, v]) => v.totalOwed > 0.01)
+            .filter(([, v]) => !isBalanceSettled(v.totalOwed))
             .map(([currency, v]) => ({ currency, amount: v.totalOwed }))
         : [];
     const youOwe = balanceSummary
         ? Object.entries(balanceSummary)
-            .filter(([, v]) => v.totalOwing > 0.01)
+            .filter(([, v]) => !isBalanceSettled(v.totalOwing))
             .map(([currency, v]) => ({ currency, amount: v.totalOwing }))
         : [];
 

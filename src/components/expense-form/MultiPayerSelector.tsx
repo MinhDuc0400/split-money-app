@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { cn } from '../../lib/utils';
 import { removeThousandsSeparator, formatAmount } from '../../lib/currency';
+import { isBalanceSettled } from '../../lib/accounting';
 import type { Member } from '../../types/member.types';
 import type { Split } from '../../types/expense.types';
 
@@ -75,9 +76,9 @@ export function MultiPayerSelector({ members, payers, setPayers, totalAmount, cu
             <div className="flex justify-between items-center text-xs font-medium uppercase tracking-wider text-muted-foreground">
                 <span className={cn(
                     "font-bold",
-                    Math.abs(remaining) < 0.01 ? "text-positive" : "text-amber-500"
+                    isBalanceSettled(remaining) ? "text-positive" : "text-amber-500"
                 )}>
-                    {Math.abs(remaining) < 0.01
+                    {isBalanceSettled(remaining)
                         ? "Balanced"
                         : `${remaining > 0 ? 'Remaining' : 'Over'}: ${formatAmount(Math.abs(remaining), currency)}`}
                 </span>

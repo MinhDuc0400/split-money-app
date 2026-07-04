@@ -6,6 +6,12 @@ export type SplitCalculationResult =
 
 // ---------- Helpers ----------
 
+// Balances within this tolerance are treated as settled (avoids floating-point noise).
+export const BALANCE_EPSILON = 0.01;
+
+export function isBalanceSettled(amount: number): boolean {
+    return Math.abs(amount) < BALANCE_EPSILON;
+}
 
 // ---------- Balances ----------
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGroup } from '../context/GroupContext';
-import { calculateSplits } from '../lib/accounting';
+import { calculateSplits, isBalanceSettled } from '../lib/accounting';
 import { SplitType, type Split, type Payer, type CreateExpenseRequest } from '../types/expense.types';
 import { useAppSelector } from '../store/hooks';
 import { AmountInput } from './expense-form/AmountInput';
@@ -221,7 +221,7 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
 
         // Final validation of payers
         const payersTotal = payers.reduce((sum, p) => sum + p.amount, 0);
-        if (Math.abs(payersTotal - totalAmount) > 0.01) {
+        if (!isBalanceSettled(payersTotal - totalAmount)) {
             alert(`The sum of payer amounts (${payersTotal.toFixed(2)}) must equal the total amount (${totalAmount.toFixed(2)}).`);
             return;
         }
