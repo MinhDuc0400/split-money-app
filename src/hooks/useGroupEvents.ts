@@ -25,22 +25,26 @@ export function useGroupEvents(groupId: string) {
 
         const socket = getSocket(token);
 
-        const onExpenseCreated = (payload: Expense & { groupId: string }) => {
-            dispatch(socketExpenseAdded(payload));
+        // Shared by all expense-change events: patch local state immediately,
+        // then resync the derived transactions/balances views from the server.
+        const refreshDerivedExpenseViews = () => {
             dispatch(fetchTransactions(groupId));
             dispatch(fetchGroupBalances(groupId));
+        };
+
+        const onExpenseCreated = (payload: Expense & { groupId: string }) => {
+            dispatch(socketExpenseAdded(payload));
+            refreshDerivedExpenseViews();
         };
 
         const onExpenseUpdated = (payload: Expense & { groupId: string }) => {
             dispatch(socketExpenseUpdated(payload));
-            dispatch(fetchTransactions(groupId));
-            dispatch(fetchGroupBalances(groupId));
+            refreshDerivedExpenseViews();
         };
 
         const onExpenseDeleted = (payload: { expenseId: string; groupId: string }) => {
             dispatch(socketExpenseDeleted(payload));
-            dispatch(fetchTransactions(groupId));
-            dispatch(fetchGroupBalances(groupId));
+            refreshDerivedExpenseViews();
         };
 
         const onSettlementUpdated = (payload: { groupId: string; settlement: GroupSettlement }) => {
