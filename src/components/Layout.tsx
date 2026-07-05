@@ -44,7 +44,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const { groups, switchGroup } = useGroup();
+    const { groups, switchGroup, activeGroupId } = useGroup();
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
@@ -138,28 +138,21 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                         </button>
                     </div>
 
-                    {/* {activeGroupId && (
+                    {activeGroupId && (
                         <>
                             <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-t border-border/50 mt-2">
-                                Current View
+                                Current group
                             </div>
 
-                            <button
-                                onClick={() => { void navigate(`/group/${activeGroupId}`); }}
-                                className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname === `/group/${activeGroupId}` ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
-                            >
-                                <LayoutDashboard className="w-5 h-5" />
-                                <span className="font-medium">Dashboard</span>
-                            </button>
                             <button
                                 onClick={() => { void navigate(`/group/${activeGroupId}/members`); }}
                                 className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname.includes('/members') ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
                             >
                                 <Users className="w-5 h-5" />
-                                <span className="font-medium">Members</span>
+                                <span className="font-medium">Manage members</span>
                             </button>
                         </>
-                    )} */}
+                    )}
                 </nav>
 
                 <div className="pt-4 border-t border-border flex items-center justify-between">
