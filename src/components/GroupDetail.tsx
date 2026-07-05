@@ -278,6 +278,13 @@ export function GroupDetail() {
                     {activeGroup?.inviteCode && (
                         <InvitationBox inviteCode={activeGroup.inviteCode} />
                     )}
+                    <button
+                        onClick={() => { void navigate(`/group/${routeId}/members`); }}
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors"
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        Manage members
+                    </button>
                     {isOwner ? (
                         <button
                             onClick={() => void handleDeleteGroup()}
