@@ -5,11 +5,9 @@ interface StepNavProps {
     onBack: () => void;
     nextLabel: string;
     nextDisabled: boolean;
-    isSubmit: boolean;
-    onNext?: () => void;
 }
 
-export function StepNav({ canGoBack, onBack, nextLabel, nextDisabled, isSubmit, onNext }: StepNavProps) {
+export function StepNav({ canGoBack, onBack, nextLabel, nextDisabled }: StepNavProps) {
     return (
         <div className="flex items-center justify-between gap-3 pt-2">
             <button
@@ -23,8 +21,7 @@ export function StepNav({ canGoBack, onBack, nextLabel, nextDisabled, isSubmit, 
                 Back
             </button>
             <button
-                type={isSubmit ? 'submit' : 'button'}
-                onClick={isSubmit ? undefined : onNext}
+                type="submit"
                 disabled={nextDisabled}
                 className={cn(
                     'flex-1 max-w-[240px] bg-primary text-primary-foreground py-3 px-6 rounded-xl font-semibold transition-all',

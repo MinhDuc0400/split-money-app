@@ -381,8 +381,6 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
                 onBack={goBack}
                 nextLabel={step === 3 ? submitLabel : 'Next'}
                 nextDisabled={!canProceed}
-                isSubmit={step === 3}
-                onNext={goNext}
             />
         </form>
     );
