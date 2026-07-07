@@ -28,9 +28,10 @@ interface ExpenseFormProps {
     onSubmit: (data: CreateExpenseRequest) => void;
     groupId?: string;
     submitLabel?: string;
+    isSubmitting?: boolean;
 }
 
-export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add Expense' }: ExpenseFormProps) {
+export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add Expense', isSubmitting = false }: ExpenseFormProps) {
     const { activeGroupId, groups: groupsMeta, fetchGroupById, isLoading } = useGroup();
     const effectiveGroupId = groupId || activeGroupId;
 
@@ -156,6 +157,8 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (isSubmitting) return;
 
         const totalAmount = parseFloat(removeThousandsSeparator(amount));
         if (!description || isNaN(totalAmount) || totalAmount <= 0) {
@@ -358,6 +361,7 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
                 shares={shares}
                 included={included}
                 members={members}
+                isSubmitting={isSubmitting}
             >
                 {submitLabel}
             </SubmitButton>

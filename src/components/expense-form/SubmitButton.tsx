@@ -11,9 +11,10 @@ interface SubmitButtonProps {
     shares: Record<string, string>;
     included: Record<string, boolean>;
     members: Member[];
+    isSubmitting?: boolean;
 }
 
-export function SubmitButton({ children, splitType, amount, manualAmounts, percentages, shares, included, members }: SubmitButtonProps) {
+export function SubmitButton({ children, splitType, amount, manualAmounts, percentages, shares, included, members, isSubmitting }: SubmitButtonProps) {
     const total = parseFloat(amount || '0');
     let disabled = false;
 
@@ -36,6 +37,8 @@ export function SubmitButton({ children, splitType, amount, manualAmounts, perce
         disabled = invalid || totalShares <= 0;
     }
 
+    disabled = disabled || (isSubmitting ?? false);
+
     return (
         <button
             type="submit"
@@ -45,7 +48,7 @@ export function SubmitButton({ children, splitType, amount, manualAmounts, perce
             )}
             disabled={disabled}
         >
-            {children}
+            {isSubmitting ? 'Saving...' : children}
         </button>
     );
 }

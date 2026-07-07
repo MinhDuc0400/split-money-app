@@ -17,9 +17,10 @@ interface EditExpenseModalProps {
     };
     onClose: () => void;
     onSubmit: (data: CreateExpenseRequest) => void;
+    isSubmitting?: boolean;
 }
 
-export function EditExpenseModal({ isOpen, initialData, onClose, onSubmit }: EditExpenseModalProps) {
+export function EditExpenseModal({ isOpen, initialData, onClose, onSubmit, isSubmitting }: EditExpenseModalProps) {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -42,6 +43,7 @@ export function EditExpenseModal({ isOpen, initialData, onClose, onSubmit }: Edi
                             initialData={initialData}
                             onSubmit={onSubmit}
                             submitLabel="Update Expense"
+                            isSubmitting={isSubmitting}
                         />
                     </motion.div>
                 </div>

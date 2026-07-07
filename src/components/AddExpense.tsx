@@ -9,15 +9,21 @@ export function AddExpense({ onClose }: { onClose: () => void }) {
     const { addExpense, groups, activeGroupId, fetchGroupById } = useGroup();
     const [selectedGroupId, setSelectedGroupId] = useState<string | null>(activeGroupId || null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleSubmit = async (data: CreateExpenseRequest) => {
-        if (!selectedGroupId) return;
-        // Ensure the correct group is loaded in context if we switched
-        if (selectedGroupId !== activeGroupId) {
-            await fetchGroupById(selectedGroupId);
+        if (!selectedGroupId || isSubmitting) return;
+        setIsSubmitting(true);
+        try {
+            // Ensure the correct group is loaded in context if we switched
+            if (selectedGroupId !== activeGroupId) {
+                await fetchGroupById(selectedGroupId);
+            }
+            await addExpense(data);
+            onClose();
+        } finally {
+            setIsSubmitting(false);
         }
-        await addExpense(data);
-        onClose();
     };
 
     const filteredGroups = useMemo(
@@ -113,6 +119,7 @@ export function AddExpense({ onClose }: { onClose: () => void }) {
                                 key={selectedGroupId} // Force re-render if selectedGroupId changes
                                 groupId={selectedGroupId}
                                 onSubmit={handleSubmit}
+                                isSubmitting={isSubmitting}
                             />
                         </motion.div>
                     )}

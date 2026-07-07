@@ -45,6 +45,7 @@ export function GroupDetail() {
     const [settlingPayment, setSettlingPayment] = useState<GroupSettlement | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isSettling, setIsSettling] = useState(false);
+    const [isUpdatingExpense, setIsUpdatingExpense] = useState(false);
     const [isLeavingGroup, setIsLeavingGroup] = useState(false);
     const [leaveError, setLeaveError] = useState<string | null>(null);
     const [isDeletingGroup, setIsDeletingGroup] = useState(false);
@@ -212,9 +213,14 @@ export function GroupDetail() {
     };
 
     const handleUpdateExpense = async (data: Omit<Expense, 'id' | 'createdAt'>) => {
-        if (editingExpenseId) {
-            await updateExpense(editingExpenseId, data);
-            setEditingExpenseId(null);
+        if (editingExpenseId && !isUpdatingExpense) {
+            setIsUpdatingExpense(true);
+            try {
+                await updateExpense(editingExpenseId, data);
+                setEditingExpenseId(null);
+            } finally {
+                setIsUpdatingExpense(false);
+            }
         }
     };
 
@@ -367,6 +373,7 @@ export function GroupDetail() {
                 initialData={initialFormData}
                 onClose={() => { setEditingExpenseId(null); }}
                 onSubmit={handleUpdateExpense}
+                isSubmitting={isUpdatingExpense}
             />
 
             <DeleteConfirmationModal

@@ -97,8 +97,10 @@ export const joinGroup = createAsyncThunk('groups/join', async (inviteCode: stri
 
 export const createExpense = createAsyncThunk(
     'groups/createExpense',
-    async ({ groupId, data }: { groupId: string; data: CreateExpenseRequest }) => {
-        return await api.post<Expense>(API_ENDPOINTS.GROUPS.EXPENSES(groupId), data);
+    async ({ groupId, data, idempotencyKey }: { groupId: string; data: CreateExpenseRequest; idempotencyKey?: string }) => {
+        return await api.post<Expense>(API_ENDPOINTS.GROUPS.EXPENSES(groupId), data, {
+            headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+        });
     }
 );
 
@@ -128,8 +130,10 @@ export const leaveGroupApi = createAsyncThunk('groups/leave', async (id: string)
 
 export const createSettlement = createAsyncThunk(
     'groups/createSettlement',
-    async ({ groupId, data }: { groupId: string; data: CreateSettlementRequest }) => {
-        return await api.post<GroupSettlement>(API_ENDPOINTS.GROUPS.SETTLEMENTS(groupId), data);
+    async ({ groupId, data, idempotencyKey }: { groupId: string; data: CreateSettlementRequest; idempotencyKey?: string }) => {
+        return await api.post<GroupSettlement>(API_ENDPOINTS.GROUPS.SETTLEMENTS(groupId), data, {
+            headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+        });
     }
 );
 

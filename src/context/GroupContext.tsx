@@ -115,7 +115,11 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
 
     const handleAddExpense = async (expenseData: CreateExpenseRequest) => {
         if (!activeGroupId) return;
-        await dispatch(createExpense({ groupId: activeGroupId, data: expenseData })).unwrap();
+        // One key per submit attempt, so a duplicated request at the network
+        // layer (retry, flaky connection redelivery) is deduped server-side
+        // instead of creating a second expense.
+        const idempotencyKey = crypto.randomUUID();
+        await dispatch(createExpense({ groupId: activeGroupId, data: expenseData, idempotencyKey })).unwrap();
         // Refresh everything to ensure consistency
         await handleFetchGroupById(activeGroupId);
     };
@@ -136,7 +140,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
 
     const handleSettleUp = async (data: CreateSettlementRequest) => {
         if (!activeGroupId) return;
-        await dispatch(createSettlement({ groupId: activeGroupId, data })).unwrap();
+        const idempotencyKey = crypto.randomUUID();
+        await dispatch(createSettlement({ groupId: activeGroupId, data, idempotencyKey })).unwrap();
         await handleFetchGroupById(activeGroupId);
         void dispatch(fetchBalanceSummary());
     };
