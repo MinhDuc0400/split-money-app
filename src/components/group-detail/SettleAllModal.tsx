@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo } from 'react';
 import { formatAmount, CURRENCIES, type Currency } from '../../lib/currency';
 import type { GroupSettlement } from '../../types/group.types';
+import { Avatar } from '../Avatar';
 
 interface SettleAllModalProps {
     isOpen: boolean;
@@ -78,16 +79,12 @@ export function SettleAllModal({
                         <div className="space-y-6">
                             <div className="flex items-center justify-between bg-secondary/30 p-4 rounded-2xl border border-border/50">
                                 <div className="flex flex-col items-center gap-2">
-                                    <div className="w-14 h-14 rounded-full bg-secondary overflow-hidden border-2 border-primary/20">
-                                        <img src={fromMember.avatar} alt={fromMember.name} className="w-full h-full object-cover" />
-                                    </div>
+                                    <Avatar name={fromMember.name} src={fromMember.avatar} className="w-14 h-14 border-2 border-primary/20" />
                                     <span className="text-sm font-bold truncate max-w-[80px]">{fromMember.name}</span>
                                 </div>
                                 <span className="text-muted-foreground text-xs">pays</span>
                                 <div className="flex flex-col items-center gap-2">
-                                    <div className="w-14 h-14 rounded-full bg-secondary overflow-hidden border-2 border-primary/20">
-                                        <img src={toMember.avatar} alt={toMember.name} className="w-full h-full object-cover" />
-                                    </div>
+                                    <Avatar name={toMember.name} src={toMember.avatar} className="w-14 h-14 border-2 border-primary/20" />
                                     <span className="text-sm font-bold truncate max-w-[80px]">{toMember.name}</span>
                                 </div>
                             </div>

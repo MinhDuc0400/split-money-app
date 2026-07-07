@@ -44,7 +44,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const { groups, switchGroup } = useGroup();
+    const { groups, switchGroup, activeGroupId } = useGroup();
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
@@ -134,39 +134,32 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                             className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-primary/5 hover:text-primary border border-dashed border-border/50 mt-1 transition-all group"
                         >
                             <PlusCircle className="w-4 h-4" />
-                            <span className="font-medium">New / Join Group</span>
+                            <span className="font-medium">Create or join group</span>
                         </button>
                     </div>
 
-                    {/* {activeGroupId && (
+                    {activeGroupId && (
                         <>
                             <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-t border-border/50 mt-2">
-                                Current View
+                                Current group
                             </div>
 
-                            <button
-                                onClick={() => { void navigate(`/group/${activeGroupId}`); }}
-                                className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname === `/group/${activeGroupId}` ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
-                            >
-                                <LayoutDashboard className="w-5 h-5" />
-                                <span className="font-medium">Dashboard</span>
-                            </button>
                             <button
                                 onClick={() => { void navigate(`/group/${activeGroupId}/members`); }}
                                 className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname.includes('/members') ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
                             >
                                 <Users className="w-5 h-5" />
-                                <span className="font-medium">Members</span>
+                                <span className="font-medium">Manage members</span>
                             </button>
                         </>
-                    )} */}
+                    )}
                 </nav>
 
                 <div className="pt-4 border-t border-border flex items-center justify-between">
                     <ThemeToggle />
                     {groups.length > 0 && (
                         <button onClick={onAddExpense} className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary/90">
-                            <PlusCircle className="w-4 h-4" /> Add Expense
+                            <PlusCircle className="w-4 h-4" /> Add expense
                         </button>
                     )}
                 </div>

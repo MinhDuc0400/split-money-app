@@ -1,9 +1,12 @@
 import { useState } from 'react';
+import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { removeThousandsSeparator, formatAmount } from '../../lib/currency';
 import { isBalanceSettled } from '../../lib/accounting';
 import type { Member } from '../../types/member.types';
 import type { Split } from '../../types/expense.types';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 
 type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] }
 
@@ -103,17 +106,15 @@ export function MultiPayerSelector({ members, payers, setPayers, totalAmount, cu
                                 className="flex items-center gap-3 flex-1 text-left"
                             >
                                 <div className="relative">
-                                    <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden border border-border">
-                                        <img src={member.avatar} alt={member.name} className="w-full h-full object-cover" />
-                                    </div>
+                                    <Avatar name={member.name} src={member.avatar} />
                                     {isSelected && (
                                         <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-[10px]">
-                                            ✓
+                                            <Check className="w-3 h-3" strokeWidth={3} />
                                         </div>
                                     )}
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold">{member.name}</p>
+                                    <p className="text-sm font-semibold flex items-center gap-2">{member.name}{member.isGuest && <GuestTag />}</p>
                                     <p className="text-[10px] text-muted-foreground">Contributor</p>
                                 </div>
                             </button>

@@ -51,12 +51,12 @@ export const WelcomeView: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg shadow-primary/20">
                         <Plus className="w-8 h-8 text-primary-foreground" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">Create New Group</h3>
+                    <h3 className="text-2xl font-bold mb-2">Create a group</h3>
                     <p className="text-muted-foreground mb-6">
                         Perfect for trips, shared households, or events. You'll be the administrator.
                     </p>
                     <div className="flex items-center text-primary font-bold gap-2">
-                        Get Started <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        Get started <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.button>
 
@@ -70,12 +70,12 @@ export const WelcomeView: React.FC = () => {
                     <div className="w-14 h-14 rounded-2xl bg-primary flex items-center justify-center mb-6 shadow-lg shadow-primary/20">
                         <Hash className="w-8 h-8 text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold mb-2">Join Existing Group</h3>
+                    <h3 className="text-2xl font-bold mb-2">Join a group</h3>
                     <p className="text-muted-foreground mb-6">
                         Joining a group created by someone else? Enter the invitation code they sent you.
                     </p>
                     <div className="flex items-center text-primary font-bold gap-2">
-                        Enter Code <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                        Enter code <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                     </div>
                 </motion.button>
             </div>
@@ -115,10 +115,10 @@ export const WelcomeView: React.FC = () => {
                             exit={{ scale: 0.95, opacity: 0 }}
                             className="bg-card border border-border rounded-2xl shadow-2xl p-6 w-full max-w-md"
                         >
-                            <h2 className="text-2xl font-bold mb-6">Create New Group</h2>
+                            <h2 className="text-2xl font-bold mb-6">Create a group</h2>
                             <form onSubmit={handleCreate} className="space-y-4">
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Group Name</label>
+                                    <label className="text-sm font-medium">Group name</label>
                                     <input
                                         autoFocus
                                         value={newGroupName}
@@ -128,7 +128,7 @@ export const WelcomeView: React.FC = () => {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-medium">Primary Currency</label>
+                                    <label className="text-sm font-medium">Primary currency</label>
                                     <select
                                         value={newGroupCurrency}
                                         onChange={e => setNewGroupCurrency(e.target.value)}

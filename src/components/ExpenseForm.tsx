@@ -11,7 +11,10 @@ import { SplitEven } from './expense-form/SplitEven';
 import { SplitExact } from './expense-form/SplitExact';
 import { SplitPercentage } from './expense-form/SplitPercentage';
 import { SplitShares } from './expense-form/SplitShares';
-import { SubmitButton } from './expense-form/SubmitButton';
+import { StepDots } from './expense-form/StepDots';
+import { StepNav } from './expense-form/StepNav';
+import { parseAmount, isWhatStepValid, isPayerStepValid, isSplitStepValid } from './expense-form/stepValidation';
+import { buildReviewSentence } from './expense-form/reviewSentence';
 import { removeThousandsSeparator, CURRENCIES, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '../lib/currency';
 
 interface ExpenseFormProps {
@@ -31,13 +34,14 @@ interface ExpenseFormProps {
     isSubmitting?: boolean;
 }
 
-export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add Expense', isSubmitting = false }: ExpenseFormProps) {
+const STEP_TITLES = ['What was it?', 'Who paid?', 'How to split?', 'Review'];
+
+export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add expense', isSubmitting = false }: ExpenseFormProps) {
     const { activeGroupId, groups: groupsMeta, fetchGroupById, isLoading } = useGroup();
     const effectiveGroupId = groupId || activeGroupId;
 
     const allMembersMap = useAppSelector(state => state.groups.membersByGroupId);
 
-    // Get members for the specific group
     const members = useMemo(() => {
         return allMembersMap[effectiveGroupId] || [];
     }, [allMembersMap, effectiveGroupId]);
@@ -48,31 +52,30 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
 
     const groupCurrency = groupMeta?.currency || 'USD';
 
-    // Fetch members if they are missing for this group
     useEffect(() => {
         if (effectiveGroupId && members.length === 0) {
             void fetchGroupById(effectiveGroupId);
         }
     }, [effectiveGroupId, members.length, fetchGroupById]);
 
+    // ---- Form state (lives here, above the steps, so navigating never loses it) ----
+    const [step, setStep] = useState(0);
+    const [submitError, setSubmitError] = useState<string | null>(null);
+
     const [description, setDescription] = useState(initialData?.description || '');
     const [amount, setAmount] = useState(initialData?.amount.toString() || '');
     const [currency, setCurrency] = useState(initialData?.currency || groupCurrency);
 
-    // Multiple payers state - default to false for new expenses
     const [isMultiPayer, setIsMultiPayer] = useState(initialData?.payers ? initialData.payers.length > 1 : false);
     const [payers, setPayers] = useState<Payer[]>(() => {
         if (initialData?.payers && initialData.payers.length > 0) return initialData.payers;
-        // Default to a single payer (usually the first member of the group)
         const defaultPayerId = initialData?.payerId || (members[0]?.id || '');
-        const defaultAmount = parseFloat(removeThousandsSeparator(amount || '0')) || 0;
+        const defaultAmount = parseAmount(initialData?.amount.toString() || '0');
         return [{ memberId: defaultPayerId, amount: defaultAmount }];
     });
 
     const [splitType, setSplitType] = useState<SplitType>(initialData?.splitType || SplitType.EVEN);
-    // Exact amounts: Record<MemberID, AmountString>
     const [manualAmounts, setManualAmounts] = useState<Record<string, string>>(initialData?.manualAmounts || {});
-    // Percentages per member (as string to keep input fidelity)
     const [percentages, setPercentages] = useState<Record<string, string>>(() => {
         if (initialData?.splitType === SplitType.PERCENTAGE && Array.isArray(initialData.splits)) {
             const obj: Record<string, string> = {};
@@ -85,7 +88,6 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
         }
         return {};
     });
-    // Shares per member (as string to allow empty state, but will be validated as integers)
     const [shares, setShares] = useState<Record<string, string>>(() => {
         if (initialData?.splitType === SplitType.SHARES && Array.isArray(initialData.splits)) {
             const obj: Record<string, string> = {};
@@ -98,16 +100,13 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
         }
         return {};
     });
-    // Included members for Equal split (checkboxes)
     const [included, setIncluded] = useState<Record<string, boolean>>(() => {
-        // If editing an equal-split expense, preselect members present in splits with amount > 0
         if (initialData && initialData.splitType === SplitType.EVEN && Array.isArray(initialData.splits)) {
             const selected = new Set(initialData.splits.filter(s => (s.amount ?? 0) > 0).map(s => s.memberId));
             const obj: Record<string, boolean> = {};
             members.forEach(m => { obj[m.id] = selected.has(m.id); });
             return obj;
         }
-        // Default: everyone included
         const obj: Record<string, boolean> = {};
         members.forEach(m => { obj[m.id] = true; });
         return obj;
@@ -124,7 +123,6 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
                     next[m.id] = true;
                 }
             });
-            // Remove keys for members that no longer exist
             const validIds = new Set(members.map(m => m.id));
             const filtered: Record<string, boolean> = {};
             Object.keys(next).forEach(id => {
@@ -136,42 +134,81 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
         });
     }
 
-    // Equal split preview value computed at top-level to avoid conditional hook usage
     const equalEach = useMemo(() => {
-        const total = parseFloat(removeThousandsSeparator(amount || '0'));
+        const total = parseAmount(amount);
         const n = members.reduce((count, m) => count + (included[m.id] ? 1 : 0), 0);
-        if (!isFinite(total) || n === 0) return '0.00';
+        if (total <= 0 || n === 0) return '0.00';
         return (total / n).toFixed(2);
     }, [amount, members, included]);
 
     // Sync single payer amount when the main amount field changes
-    // This ensures that switching to Multiple Payers later has the correct initial amount
     useEffect(() => {
         if (!isMultiPayer && payers.length === 1) {
-            const currentAmount = parseFloat(removeThousandsSeparator(amount || '0')) || 0;
+            const currentAmount = parseAmount(amount);
             if (payers[0].amount !== currentAmount) {
                 setPayers([{ ...payers[0], amount: currentAmount }]);
             }
         }
     }, [amount, isMultiPayer, payers]);
 
+    // ---- Step gating ----
+    const canProceed =
+        step === 0 ? isWhatStepValid(description, amount)
+        : step === 1 ? isPayerStepValid(isMultiPayer, payers, amount)
+        : step === 2 ? isSplitStepValid(splitType, amount, members, { included, manualAmounts, percentages, shares })
+        : true;
+
+    const goBack = () => {
+        setSubmitError(null);
+        setStep(s => Math.max(0, s - 1));
+    };
+    const goNext = () => {
+        setSubmitError(null);
+        setStep(s => Math.min(3, s + 1));
+    };
+
+    const reviewSentence = useMemo(() => {
+        const total = parseAmount(amount);
+        const activePayers = isMultiPayer ? payers.filter(p => p.amount > 0) : payers.slice(0, 1);
+        const payerNames = activePayers.map(p => members.find(m => m.id === p.memberId)?.name ?? 'Someone');
+
+        let participantNames: string[] = [];
+        if (splitType === SplitType.EVEN) {
+            participantNames = members.filter(m => included[m.id]).map(m => m.name);
+        } else if (splitType === SplitType.EXACT) {
+            participantNames = members
+                .filter(m => (parseFloat(removeThousandsSeparator(manualAmounts[m.id] || '0')) || 0) > 0)
+                .map(m => m.name);
+        } else if (splitType === SplitType.PERCENTAGE) {
+            participantNames = members.filter(m => (parseFloat(percentages[m.id] || '0') || 0) > 0).map(m => m.name);
+        } else {
+            participantNames = members.filter(m => (parseInt((shares[m.id] || '0').trim() || '0', 10) || 0) > 0).map(m => m.name);
+        }
+
+        return buildReviewSentence({ payerNames, totalAmount: total, currency, splitType, participantNames });
+    }, [amount, members, payers, isMultiPayer, splitType, included, manualAmounts, percentages, shares, currency]);
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
         if (isSubmitting) return;
 
-        const totalAmount = parseFloat(removeThousandsSeparator(amount));
-        if (!description || isNaN(totalAmount) || totalAmount <= 0) {
-            alert('Please enter a valid description and amount.');
+        // Enter on an earlier step advances instead of submitting
+        if (step < 3) {
+            if (canProceed) goNext();
             return;
         }
 
+        const totalAmount = parseAmount(amount);
+        if (!description || totalAmount <= 0) {
+            setSubmitError('Enter a description and an amount greater than zero.');
+            return;
+        }
         if (members.length === 0) {
-            alert('Please add members first.');
+            setSubmitError('This group has no members to split with.');
             return;
         }
 
-        // Prepare data for calculation
         const options: {
             includedMemberIds?: string[];
             manualAmounts: Record<string, number>;
@@ -186,27 +223,22 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
         if (splitType === SplitType.EVEN) {
             options.includedMemberIds = members.filter(m => included[m.id]).map(m => m.id);
         } else if (splitType === SplitType.EXACT) {
-            options.manualAmounts = {};
             members.forEach(m => {
                 const val = parseFloat(removeThousandsSeparator(manualAmounts[m.id] || '0'));
                 options.manualAmounts[m.id] = isNaN(val) ? 0 : val;
             });
         } else if (splitType === SplitType.PERCENTAGE) {
-            options.percentages = {};
             members.forEach(m => {
                 const val = parseFloat(removeThousandsSeparator(percentages[m.id] || '0'));
                 options.percentages[m.id] = isNaN(val) ? 0 : val;
             });
         } else if (splitType === SplitType.SHARES) {
-            // Strict integer validation for UI
             const sharesList = members.map(m => (shares[m.id] || '').trim());
             const invalid = sharesList.some(s => s !== '' && !/^\d+$/.test(s));
             if (invalid) {
-                alert('Shares must be integers (0 or more).');
+                setSubmitError('Shares must be whole numbers (0 or more).');
                 return;
             }
-
-            options.shares = {};
             members.forEach(m => {
                 const val = (shares[m.id] || '').trim();
                 options.shares[m.id] = val === '' ? 0 : parseInt(val, 10);
@@ -214,18 +246,14 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
         }
 
         const result = calculateSplits(totalAmount, splitType, members, options);
-
         if (!result.success) {
-            alert(result.error);
+            setSubmitError(result.error);
             return;
         }
 
-        const splits = result.splits;
-
-        // Final validation of payers
         const payersTotal = payers.reduce((sum, p) => sum + p.amount, 0);
         if (!isBalanceSettled(payersTotal - totalAmount)) {
-            alert(`The sum of payer amounts (${payersTotal.toFixed(2)}) must equal the total amount (${totalAmount.toFixed(2)}).`);
+            setSubmitError(`Payer amounts add up to ${payersTotal.toFixed(2)} but the total is ${totalAmount.toFixed(2)}. Go back and adjust who paid.`);
             return;
         }
 
@@ -235,16 +263,17 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
             currency,
             payers: isMultiPayer ? payers : [{ memberId: payers[0].memberId, amount: totalAmount }],
             splitType,
-            splits,
+            splits: result.splits,
             date: new Date().toISOString()
         });
     };
 
     if (isLoading && members.length === 0) {
         return (
-            <div className="p-12 flex flex-col items-center justify-center">
-                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-                <p className="text-sm text-muted-foreground animate-pulse">Loading members...</p>
+            <div className="space-y-3 p-2" aria-label="Loading members">
+                <div className="h-16 rounded-xl bg-muted animate-pulse" />
+                <div className="h-10 rounded-xl bg-muted animate-pulse" />
+                <div className="h-10 rounded-xl bg-muted animate-pulse" />
             </div>
         );
     }
@@ -252,119 +281,107 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
     if (members.length === 0) {
         return (
             <div className="p-6 text-center">
-                <p className="text-muted-foreground mb-4">No members found in this group. Please add members first.</p>
+                <p className="text-muted-foreground">This group has no members yet. Add people from the group's member screen first.</p>
             </div>
         );
     }
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            <AmountInput
-                amount={amount}
-                setAmount={setAmount}
-                description={description}
-                setDescription={setDescription}
-                currency={currency}
-                autoFocus={!initialData}
-            />
-
             <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Currency</label>
-                <select
-                    value={currency}
-                    onChange={(e) => { setCurrency(e.target.value); }}
-                    className="w-full bg-secondary/50 rounded-lg px-4 py-3 text-sm border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                >
-                    {CURRENCIES.map(curr => (
-                        <option key={curr} value={curr}>
-                            {CURRENCY_SYMBOLS[curr]} {curr} - {CURRENCY_NAMES[curr]}
-                        </option>
-                    ))}
-                </select>
+                <StepDots current={step} />
+                <h3 className="text-center text-sm font-semibold text-muted-foreground">{STEP_TITLES[step]}</h3>
             </div>
 
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Paid By</label>
+            {step === 0 && (
+                <div className="space-y-6">
+                    <AmountInput
+                        amount={amount}
+                        setAmount={setAmount}
+                        description={description}
+                        setDescription={setDescription}
+                        currency={currency}
+                        autoFocus={!initialData}
+                    />
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">Currency</label>
+                        <select
+                            value={currency}
+                            onChange={(e) => { setCurrency(e.target.value); }}
+                            className="w-full bg-secondary/50 rounded-lg px-4 py-3 text-sm border border-border focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
+                        >
+                            {CURRENCIES.map(curr => (
+                                <option key={curr} value={curr}>
+                                    {CURRENCY_SYMBOLS[curr]} {curr} - {CURRENCY_NAMES[curr]}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            )}
+
+            {step === 1 && (
+                <div className="space-y-4">
+                    {isMultiPayer ? (
+                        <MultiPayerSelector
+                            members={members}
+                            payers={payers}
+                            setPayers={setPayers}
+                            totalAmount={parseAmount(amount)}
+                            currency={currency}
+                        />
+                    ) : (
+                        <PayerSelector
+                            members={members}
+                            payerId={payers[0]?.memberId || ''}
+                            setPayerId={(id) => { setPayers([{ memberId: id, amount: parseAmount(amount) }]); }}
+                        />
+                    )}
                     <button
                         type="button"
-                        onClick={() => setIsMultiPayer(!isMultiPayer)}
-                        className="text-xs font-medium text-primary hover:underline"
+                        onClick={() => { setIsMultiPayer(!isMultiPayer); }}
+                        className="text-sm font-medium text-primary hover:underline"
                     >
-                        {isMultiPayer ? 'Select Single Payer' : 'Multiple Payers'}
+                        {isMultiPayer ? 'Use a single payer' : 'Split the payment across multiple people'}
                     </button>
                 </div>
+            )}
 
-                {isMultiPayer ? (
-                    <MultiPayerSelector
-                        members={members}
-                        payers={payers}
-                        setPayers={setPayers}
-                        totalAmount={parseFloat(removeThousandsSeparator(amount || '0'))}
-                        currency={currency}
-                    />
-                ) : (
-                    <PayerSelector
-                        members={members}
-                        payerId={payers[0]?.memberId || ''}
-                        setPayerId={(id) => setPayers([{ memberId: id, amount: parseFloat(removeThousandsSeparator(amount || '0')) }])}
-                    />
-                )}
-            </div>
+            {step === 2 && (
+                <div className="space-y-4">
+                    <SplitTypeSelector splitType={splitType} setSplitType={setSplitType} />
 
-            <SplitTypeSelector
-                splitType={splitType}
-                setSplitType={setSplitType}
+                    {splitType === SplitType.EVEN && (
+                        <SplitEven members={members} included={included} setIncluded={setIncluded} equalEach={equalEach} />
+                    )}
+                    {splitType === SplitType.EXACT && (
+                        <SplitExact members={members} manualAmounts={manualAmounts} setManualAmounts={setManualAmounts} amount={amount} currency={currency} />
+                    )}
+                    {splitType === SplitType.PERCENTAGE && (
+                        <SplitPercentage members={members} percentages={percentages} setPercentages={setPercentages} amount={amount} />
+                    )}
+                    {splitType === SplitType.SHARES && (
+                        <SplitShares members={members} shares={shares} setShares={setShares} />
+                    )}
+                </div>
+            )}
+
+            {step === 3 && (
+                <div className="space-y-4 bg-secondary/20 rounded-xl p-5">
+                    <p className="text-base leading-relaxed">{reviewSentence}</p>
+                    {submitError && (
+                        <p className="text-sm text-negative">{submitError}</p>
+                    )}
+                </div>
+            )}
+
+            <StepNav
+                canGoBack={step > 0}
+                onBack={goBack}
+                nextLabel={step === 3 ? (isSubmitting ? 'Saving…' : submitLabel) : 'Next'}
+                nextDisabled={!canProceed || isSubmitting}
             />
-
-            {splitType === SplitType.EVEN && (
-                <SplitEven
-                    members={members}
-                    included={included}
-                    setIncluded={setIncluded}
-                    equalEach={equalEach}
-                />
-            )}
-
-            {splitType === SplitType.EXACT && (
-                <SplitExact
-                    members={members}
-                    manualAmounts={manualAmounts}
-                    setManualAmounts={setManualAmounts}
-                    amount={amount}
-                    currency={currency}
-                />
-            )}
-
-            {splitType === SplitType.PERCENTAGE && (
-                <SplitPercentage
-                    members={members}
-                    percentages={percentages}
-                    setPercentages={setPercentages}
-                    amount={amount}
-                />
-            )}
-
-            {splitType === SplitType.SHARES && (
-                <SplitShares
-                    members={members}
-                    shares={shares}
-                    setShares={setShares}
-                />
-            )}
-
-            <SubmitButton
-                splitType={splitType}
-                amount={amount}
-                manualAmounts={manualAmounts}
-                percentages={percentages}
-                shares={shares}
-                included={included}
-                members={members}
-                isSubmitting={isSubmitting}
-            >
-                {submitLabel}
-            </SubmitButton>
         </form>
     );
 }

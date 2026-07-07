@@ -129,7 +129,7 @@ export function calculateSplits(
             const participants = members.filter(m => included.has(m.id));
 
             if (!participants.length)
-                return { success: false, error: "Please select at least one participant." };
+                return { success: false, error: "Select at least one participant." };
 
 
             splits = participants.map((m) => ({

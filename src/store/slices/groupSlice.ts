@@ -50,6 +50,7 @@ function toMember(m: GroupMember): Member {
         avatar: m.avatarUrl ?? undefined,
         userId: m.userId ?? undefined,
         role: m.role,
+        isGuest: m.isGuest ?? false,
     };
 }
 
@@ -152,6 +153,28 @@ export const settleAllApi = createAsyncThunk(
         return await api.post<{ settlements: GroupSettlement[] }>(API_ENDPOINTS.GROUPS.SETTLE_ALL(groupId), data, {
             headers: { 'Idempotency-Key': idempotencyKey },
         });
+    }
+);
+
+export const addGuest = createAsyncThunk(
+    'groups/addGuest',
+    async ({ groupId, name }: { groupId: string; name: string }) => {
+        return await api.post<GroupMember>(API_ENDPOINTS.GROUPS.GUESTS(groupId), { name });
+    }
+);
+
+export const renameGuest = createAsyncThunk(
+    'groups/renameGuest',
+    async ({ groupId, guestId, name }: { groupId: string; guestId: string; name: string }) => {
+        return await api.patch<GroupMember>(API_ENDPOINTS.GROUPS.GUEST_BY_ID(groupId, guestId), { name });
+    }
+);
+
+export const removeGuest = createAsyncThunk(
+    'groups/removeGuest',
+    async ({ groupId, guestId }: { groupId: string; guestId: string }) => {
+        await api.delete(API_ENDPOINTS.GROUPS.GUEST_BY_ID(groupId, guestId));
+        return { groupId, guestId };
     }
 );
 
@@ -474,6 +497,43 @@ const groupSlice = createSlice({
             .addCase(settleAllApi.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to settle all';
+            })
+            // Guests
+            .addCase(addGuest.fulfilled, (state, action) => {
+                const member = action.payload;
+                const { groupId } = action.meta.arg;
+                if (state.activeGroup && state.activeGroup.id === groupId) {
+                    if (!state.activeGroup.members.some(m => m.id === member.id)) {
+                        state.activeGroup.members.push(member);
+                    }
+                }
+                const list = state.membersByGroupId[groupId];
+                if (list && !list.some(m => m.id === member.id)) {
+                    list.push(toMember(member));
+                }
+            })
+            .addCase(renameGuest.fulfilled, (state, action) => {
+                const member = action.payload;
+                const { groupId, guestId } = action.meta.arg;
+                if (state.activeGroup && state.activeGroup.id === groupId) {
+                    const i = state.activeGroup.members.findIndex(m => m.id === guestId);
+                    if (i !== -1) state.activeGroup.members[i] = { ...state.activeGroup.members[i], ...member };
+                }
+                const list = state.membersByGroupId[groupId];
+                if (list) {
+                    const i = list.findIndex(m => m.id === guestId);
+                    if (i !== -1) list[i] = { ...list[i], name: member.name };
+                }
+            })
+            .addCase(removeGuest.fulfilled, (state, action) => {
+                const { groupId, guestId } = action.payload;
+                if (state.activeGroup && state.activeGroup.id === groupId) {
+                    state.activeGroup.members = state.activeGroup.members.filter(m => m.id !== guestId);
+                }
+                const list = state.membersByGroupId[groupId];
+                if (list) {
+                    state.membersByGroupId[groupId] = list.filter(m => m.id !== guestId);
+                }
             });
     },
 });

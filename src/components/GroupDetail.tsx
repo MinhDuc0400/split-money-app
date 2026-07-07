@@ -13,6 +13,7 @@ import { DeleteConfirmationModal } from './group-detail/DeleteConfirmationModal'
 import { SettleUpModal } from './group-detail/SettleUpModal';
 import { SettleAllModal } from './group-detail/SettleAllModal';
 import { InvitationBox } from './group-detail/InvitationBox';
+import { AddExpense } from './AddExpense';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
@@ -60,6 +61,7 @@ export function GroupDetail() {
     const [displayCurrency, setDisplayCurrency] = useState<Currency>('USD');
     const dispatch = useAppDispatch();
     const exchangeRates = useAppSelector((state) => state.groups.exchangeRates);
+    const [isAddingExpense, setIsAddingExpense] = useState(false);
 
     // Always fetch with base=USD - the scheduled backend job only ever caches
     // rates with USD as the base (see Task 2), so this must not depend on
@@ -227,7 +229,7 @@ export function GroupDetail() {
     const handleLeaveGroup = async () => {
         if (!activeGroup) return;
         if (!isSettledUp) {
-            setLeaveError('You have unsettled balances. Please settle up before leaving the group.');
+            setLeaveError('You have an unsettled balance. Settle up before leaving the group.');
             return;
         }
         setIsLeavingGroup(true);
@@ -245,7 +247,7 @@ export function GroupDetail() {
     const handleDeleteGroup = async () => {
         if (!activeGroup) return;
         if (!isGroupFullySettled) {
-            setDeleteGroupError('All members must settle their balances before the group can be deleted.');
+            setDeleteGroupError("Balances aren't settled. Everyone needs to settle up before the group can be deleted.");
             return;
         }
         setIsDeletingGroup(true);
@@ -324,6 +326,13 @@ export function GroupDetail() {
                     {activeGroup?.inviteCode && (
                         <InvitationBox inviteCode={activeGroup.inviteCode} />
                     )}
+                    <button
+                        onClick={() => { void navigate(`/group/${routeId}/members`); }}
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors"
+                    >
+                        <Users className="w-3.5 h-3.5" />
+                        Manage members
+                    </button>
                     {isOwner ? (
                         <button
                             onClick={() => void handleDeleteGroup()}
@@ -331,7 +340,7 @@ export function GroupDetail() {
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
-                            {isDeletingGroup ? 'Deleting...' : 'Delete Group'}
+                            {isDeletingGroup ? 'Deleting…' : 'Delete group'}
                         </button>
                     ) : (
                         <button
@@ -340,7 +349,7 @@ export function GroupDetail() {
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
                         >
                             <LogOut className="w-3.5 h-3.5" />
-                            {isLeavingGroup ? 'Leaving...' : 'Quit Group'}
+                            {isLeavingGroup ? 'Leaving…' : 'Leave group'}
                         </button>
                     )}
                 </div>
@@ -360,50 +369,42 @@ export function GroupDetail() {
                 </div>
             )}
 
-            {/* Main Content Splitwise-style */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                {/* Left Column: Balances & Members */}
-                <div className="lg:col-span-8 space-y-8">
-                    {/* Your Balance Summary - Compact */}
-                    <div className="flex flex-col sm:flex-row gap-4">
-                        <div className="flex-1">
-                            <BalanceCard type="owed" balances={owedToYou} />
-                        </div>
-                        <div className="flex-1">
-                            <BalanceCard type="owing" balances={youOwe} />
-                        </div>
-                    </div>
+            {/* Settlement plan first — it answers "what do I do now" */}
+            <SettlementPlanList
+                settlements={settlementPlan}
+                getMemberName={getMemberName}
+                getMemberAvatar={getMemberAvatar}
+                isGuestMember={(id) => memberMap[id]?.isGuest ?? false}
+                onSettle={handleSettleClick}
+                onSettleAll={handleSettleAllClick}
+                currentMemberId={currentUserMember?.id}
+            />
 
-                    {/* Member Balances List (Splitwise style) */}
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between px-2">
-                            <div className="flex items-center gap-2">
-                                <Users className="w-5 h-5 text-primary" />
-                                <h3 className="font-bold text-lg">Group Balances</h3>
-                            </div>
-                        </div>
-
-                        <MemberBalancesList members={members} serverBalances={groupBalances} />
-                    </div>
+            {/* Your balance summary */}
+            <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                    <BalanceCard type="owed" balances={owedToYou} />
                 </div>
-
-                {/* Right Column: Settlements */}
-                <div className="lg:col-span-4 space-y-6 lg:sticky lg:top-24">
-                    <SettlementPlanList
-                        settlements={settlementPlan}
-                        getMemberName={getMemberName}
-                        getMemberAvatar={getMemberAvatar}
-                        onSettle={handleSettleClick}
-                        onSettleAll={handleSettleAllClick}
-                        currentMemberId={currentUserMember?.id}
-                    />
+                <div className="flex-1">
+                    <BalanceCard type="owing" balances={youOwe} />
                 </div>
             </div>
 
-            {/* History Section */}
+            {/* Member balances */}
+            <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-2">
+                        <Users className="w-5 h-5 text-primary" />
+                        <h3 className="font-bold text-lg">Group balances</h3>
+                    </div>
+                </div>
+                <MemberBalancesList members={members} serverBalances={groupBalances} />
+            </div>
+
+            {/* History */}
             <div className="space-y-6">
                 <div className="flex items-center justify-between px-2">
-                    <h2 className="text-2xl font-bold italic tracking-tight">Payment History</h2>
+                    <h2 className="text-2xl font-bold tracking-tight">Payment history</h2>
                 </div>
 
                 <HistoryList
@@ -413,6 +414,7 @@ export function GroupDetail() {
                     getMemberName={getMemberName}
                     onEdit={handleEditClick}
                     onDelete={handleDeleteClick}
+                    onAddExpense={() => { setIsAddingExpense(true); }}
                 />
             </div>
 
@@ -473,6 +475,8 @@ export function GroupDetail() {
                     error={settleAllError}
                 />
             )}
+
+            {isAddingExpense && <AddExpense onClose={() => { setIsAddingExpense(false); }} />}
         </div>
     );
 }

@@ -19,6 +19,8 @@ export const API_ENDPOINTS = {
         SETTLE_ALL: (id: string) => `${API_BASE_URL}/groups/${id}/settlements/settle-all`,
         EXPENSE_BY_ID: (groupId: string, expenseId: string) => `${API_BASE_URL}/groups/${groupId}/expenses/${expenseId}`,
         LEAVE: (id: string) => `${API_BASE_URL}/groups/${id}/leave`,
+        GUESTS: (id: string) => `${API_BASE_URL}/groups/${id}/guests`,
+        GUEST_BY_ID: (groupId: string, guestId: string) => `${API_BASE_URL}/groups/${groupId}/guests/${guestId}`,
     },
     EXPENSES: {
         BASE: `${API_BASE_URL}/expenses`,

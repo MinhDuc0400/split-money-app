@@ -47,7 +47,7 @@ export function MobileGroupList() {
                 {filteredGroups.length === 0 ? (
                     <div className="text-center py-12 px-4 bg-secondary/20 rounded-2xl border border-dashed border-border/50">
                         <Users className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-20" />
-                        <p className="text-sm text-muted-foreground italic">No groups found. Join or create one to get started!</p>
+                        <p className="text-sm text-muted-foreground italic">No groups found. Join or create one to get started.</p>
                         <button
                             onClick={() => setIsActionModalOpen(true)}
                             className="mt-4 text-sm font-semibold text-primary"

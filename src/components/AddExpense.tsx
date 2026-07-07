@@ -43,13 +43,13 @@ export function AddExpense({ onClose }: { onClose: () => void }) {
             >
                 <div className="flex justify-between items-center mb-6">
                     <div className="flex flex-col">
-                        <h2 className="text-xl font-bold">New Expense</h2>
+                        <h2 className="text-xl font-bold">Add expense</h2>
                         {selectedGroupId && (
                             <button
                                 onClick={() => setSelectedGroupId(null)}
                                 className="text-xs text-primary hover:underline self-start mt-0.5"
                             >
-                                Change Group
+                                Change group
                             </button>
                         )}
                     </div>
@@ -82,7 +82,7 @@ export function AddExpense({ onClose }: { onClose: () => void }) {
 
                             <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                                 {filteredGroups.length === 0 ? (
-                                    <p className="text-center py-8 text-sm text-muted-foreground italic">No groups found</p>
+                                    <p className="text-center py-8 text-sm text-muted-foreground italic">No groups match your search.</p>
                                 ) : (
                                     filteredGroups.map(group => (
                                         <button

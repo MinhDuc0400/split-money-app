@@ -1,6 +1,8 @@
 import { motion } from 'framer-motion';
 import { formatAmount } from '../../lib/currency';
 import type { GroupSettlement } from '../../types/group.types';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 
 interface SettlementPlanListProps {
     settlements: GroupSettlement[];
@@ -9,6 +11,7 @@ interface SettlementPlanListProps {
     onSettle?: (settlement: GroupSettlement) => void;
     onSettleAll?: (items: GroupSettlement[]) => void;
     currentMemberId?: string;
+    isGuestMember?: (id: string) => boolean;
 }
 
 interface SettlementGroup {
@@ -37,7 +40,7 @@ function groupByPair(settlements: GroupSettlement[]): SettlementGroup[] {
     return Array.from(groups.values());
 }
 
-export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar, onSettle, onSettleAll, currentMemberId }: SettlementPlanListProps) {
+export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar, onSettle, onSettleAll, currentMemberId, isGuestMember }: SettlementPlanListProps) {
     const groups = groupByPair(settlements);
 
     return (
@@ -48,8 +51,9 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
             </h3>
             <div className="space-y-4">
                 {groups.length === 0 ? (
-                    <div className="text-center py-12 border-2 border-dashed border-border/50 rounded-xl">
-                        <p className="text-muted-foreground">No debts found. Everyone is settled up.</p>
+                    <div className="text-center py-12 border-2 border-dashed border-border/50 rounded-xl px-6">
+                        <p className="font-medium">Everyone is settled up</p>
+                        <p className="text-sm text-muted-foreground mt-1">New expenses will show who pays whom.</p>
                     </div>
                 ) : (
                     groups.map((group, idx) => {
@@ -69,18 +73,22 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                             >
                                 <div className="flex items-center justify-between mb-2">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden">
-                                            <img src={fromAvatar} alt="" className="w-full h-full object-cover" />
-                                        </div>
+                                        <Avatar name={fromName} src={fromAvatar} />
                                         <div className="text-sm">
-                                            <div className="font-semibold">{fromName}</div>
-                                            <div className="text-muted-foreground text-xs">pays {toName}</div>
+                                            <div className="font-semibold flex items-center gap-2">
+                                                {fromName}
+                                                {isGuestMember?.(group.fromMemberId) && <GuestTag />}
+                                            </div>
+                                            <div className="text-muted-foreground text-xs flex items-center gap-1.5">
+                                                pays {toName}
+                                                {isGuestMember?.(group.toMemberId) && <GuestTag />}
+                                            </div>
                                         </div>
                                     </div>
                                     {canSettle && onSettleAll && group.items.length > 1 && (
                                         <button
                                             onClick={() => onSettleAll(group.items)}
-                                            className="px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-xs font-bold hover:opacity-90 transition-all active:scale-95"
+                                            className="px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-xs font-semibold hover:opacity-90 transition-all active:scale-95"
                                         >
                                             Settle all
                                         </button>
@@ -93,9 +101,9 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                                             {canSettle && onSettle && (
                                                 <button
                                                     onClick={() => onSettle(item)}
-                                                    className="px-2.5 py-0.5 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-full text-[10px] font-black uppercase tracking-widest transition-all active:scale-95"
+                                                    className="px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-full text-[10px] font-semibold transition-all active:scale-95"
                                                 >
-                                                    Settle
+                                                    Record payment
                                                 </button>
                                             )}
                                         </div>

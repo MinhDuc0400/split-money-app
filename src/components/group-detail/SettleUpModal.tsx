@@ -1,6 +1,7 @@
 import { ArrowRight, Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { Avatar } from '../Avatar';
 
 interface SettleUpModalProps {
     isOpen: boolean;
@@ -45,10 +46,11 @@ export function SettleUpModal({
                         className="bg-card w-full max-w-md rounded-2xl p-6 relative z-10 border border-border/50 shadow-2xl"
                     >
                         <div className="flex justify-between items-start mb-6">
-                            <h2 className="text-xl font-bold">Settle Up</h2>
+                            <h2 className="text-xl font-bold">Record payment</h2>
                             <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-secondary rounded-full transition-colors"
+                                aria-label="Close"
                                 disabled={isLoading}
                             >
                                 <X className="w-5 h-5" />
@@ -59,9 +61,7 @@ export function SettleUpModal({
                             {/* Settlement Visualization */}
                             <div className="flex items-center justify-between bg-secondary/30 p-6 rounded-2xl border border-border/50">
                                 <div className="flex flex-col items-center gap-2">
-                                    <div className="w-16 h-16 rounded-full bg-secondary overflow-hidden border-2 border-primary/20">
-                                        <img src={fromMember.avatar} alt={fromMember.name} className="w-full h-full object-cover" />
-                                    </div>
+                                    <Avatar name={fromMember.name} src={fromMember.avatar} className="w-16 h-16 border-2 border-primary/20" />
                                     <span className="text-sm font-bold truncate max-w-[80px]">{fromMember.name}</span>
                                 </div>
 
@@ -71,7 +71,7 @@ export function SettleUpModal({
                                             type="number"
                                             value={amount}
                                             onChange={(e) => setAmount(e.target.value)}
-                                            className="w-24 text-center bg-transparent border-b-2 border-primary/30 focus:border-primary text-xl font-black text-primary p-1 focus:outline-none transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            className="w-24 text-center bg-transparent border-b-2 border-primary/30 focus:border-primary text-xl font-black text-primary p-1 focus:outline-none transition-all tabular-nums [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                             autoFocus
                                         />
                                         <div className="text-[10px] font-bold text-muted-foreground mt-1">{currency}</div>
@@ -80,15 +80,13 @@ export function SettleUpModal({
                                 </div>
 
                                 <div className="flex flex-col items-center gap-2">
-                                    <div className="w-16 h-16 rounded-full bg-secondary overflow-hidden border-2 border-primary/20">
-                                        <img src={toMember.avatar} alt={toMember.name} className="w-full h-full object-cover" />
-                                    </div>
+                                    <Avatar name={toMember.name} src={toMember.avatar} className="w-16 h-16 border-2 border-primary/20" />
                                     <span className="text-sm font-bold truncate max-w-[80px]">{toMember.name}</span>
                                 </div>
                             </div>
 
                             <div className="space-y-2">
-                                <label htmlFor="note" className="text-sm font-bold ml-1 uppercase tracking-wider text-muted-foreground">
+                                <label htmlFor="note" className="text-sm font-medium ml-1 text-muted-foreground">
                                     Note (optional)
                                 </label>
                                 <input
@@ -120,7 +118,7 @@ export function SettleUpModal({
                                     ) : (
                                         <>
                                             <Check className="w-4 h-4" />
-                                            Confirm Payment
+                                            Record payment
                                         </>
                                     )}
                                 </button>

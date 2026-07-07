@@ -23,7 +23,7 @@ export const JoinGroupOverlay: React.FC<JoinGroupOverlayProps> = ({ onClose }) =
             await joinGroup(code.trim().toUpperCase());
             onClose();
         } catch (err: any) {
-            setLocalError(err.message || 'Failed to join group. Please check the code.');
+            setLocalError(err.message || 'Failed to join group. Check the code and try again.');
         } finally {
             setIsJoining(false);
         }

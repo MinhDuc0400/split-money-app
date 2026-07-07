@@ -4,19 +4,21 @@ import { motion } from 'framer-motion';
 import { cn } from '../../lib/utils';
 import { formatAmount } from '../../lib/currency';
 import { isBalanceSettled } from '../../lib/accounting';
+import { Avatar } from '../Avatar';
+import { GuestTag } from '../GuestTag';
 import type { Member } from '../../types/member.types';
 
 interface MemberListItemProps {
     member: Member;
     balances: Record<string, Record<string, number>>;
-    onUpdateName: (id: string, name: string) => void;
-    onRemove: (id: string, e: React.MouseEvent) => void;
-    renameDisabled?: boolean;
+    onUpdateName: (id: string, name: string) => Promise<void>;
+    onRemove: (id: string) => void;
 }
 
-export function MemberListItem({ member, balances, onUpdateName, onRemove, renameDisabled }: MemberListItemProps) {
+export function MemberListItem({ member, balances, onUpdateName, onRemove }: MemberListItemProps) {
     const [isEditing, setIsEditing] = useState(false);
     const [editName, setEditName] = useState(member.name);
+    const isGuest = member.isGuest ?? false;
 
     const handleStartEdit = () => {
         setIsEditing(true);
@@ -25,7 +27,7 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove, renam
 
     const handleSaveEdit = () => {
         if (editName.trim()) {
-            onUpdateName(member.id, editName.trim());
+            void onUpdateName(member.id, editName.trim());
             setIsEditing(false);
         }
     };
@@ -35,7 +37,6 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove, renam
         setEditName(member.name);
     };
 
-    // Get all balances for this member across currencies
     const memberBalances = Object.entries(balances)
         .map(([curr, currencyBalances]) => ({
             currency: curr,
@@ -62,28 +63,24 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove, renam
                             if (e.key === 'Escape') handleCancelEdit();
                         }}
                     />
-                    <button onClick={handleSaveEdit} className="p-1 text-positive hover:bg-positive/10 rounded">
+                    <button onClick={handleSaveEdit} aria-label="Save name" className="p-1 text-positive hover:bg-positive/10 rounded">
                         <Check className="w-4 h-4" />
                     </button>
-                    <button onClick={handleCancelEdit} className="p-1 text-muted-foreground hover:bg-secondary rounded">
+                    <button onClick={handleCancelEdit} aria-label="Cancel rename" className="p-1 text-muted-foreground hover:bg-secondary rounded">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
             ) : (
                 <>
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-secondary overflow-hidden">
-                            <img
-                                src={member.avatar}
-                                alt={member.name}
-                                className="w-full h-full object-cover"
-                            />
-                        </div>
-                        <span className="font-medium text-sm">{member.name}</span>
-                        {!renameDisabled && (
+                    <div className="flex items-center gap-3 min-w-0">
+                        <Avatar name={member.name} src={member.avatar} />
+                        <span className="font-medium text-sm truncate">{member.name}</span>
+                        {isGuest && <GuestTag />}
+                        {isGuest && (
                             <button
                                 onClick={handleStartEdit}
-                                className="opacity-0 group-hover:opacity-100 p-1.5 text-muted-foreground hover:text-primary transition-all"
+                                aria-label={`Rename ${member.name}`}
+                                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1.5 text-muted-foreground hover:text-primary transition-all"
                             >
                                 <Pencil className="w-3 h-3" />
                             </button>
@@ -91,21 +88,23 @@ export function MemberListItem({ member, balances, onUpdateName, onRemove, renam
                     </div>
 
                     <div className="flex items-center gap-4">
-                        {/* Show balance hints for all currencies if non-zero */}
                         <div className="flex flex-col items-end gap-0.5">
                             {memberBalances.map(({ currency, balance }) => (
-                                <span key={currency} className={cn("text-xs font-medium", balance > 0 ? "text-positive" : "text-negative")}>
-                                    {balance > 0 ? '+' : ''}{formatAmount(Math.abs(balance), currency)}
+                                <span key={currency} className={cn("text-xs font-medium tabular-nums", balance > 0 ? "text-positive" : "text-negative")}>
+                                    {balance > 0 ? '+' : '−'}{formatAmount(Math.abs(balance), currency)}
                                 </span>
                             ))}
                         </div>
 
-                        <button
-                            onClick={(e) => { onRemove(member.id, e); }}
-                            className="text-muted-foreground hover:text-destructive p-2 rounded-full hover:bg-destructive/10 transition-colors"
-                        >
-                            <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isGuest && (
+                            <button
+                                onClick={() => { onRemove(member.id); }}
+                                aria-label={`Remove ${member.name}`}
+                                className="text-muted-foreground hover:text-destructive p-2 rounded-full hover:bg-destructive/10 transition-colors"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        )}
                     </div>
                 </>
             )}
