@@ -11,12 +11,15 @@ import { HistoryList } from './group-detail/HistoryList';
 import { EditExpenseModal } from './group-detail/EditExpenseModal';
 import { DeleteConfirmationModal } from './group-detail/DeleteConfirmationModal';
 import { SettleUpModal } from './group-detail/SettleUpModal';
+import { SettleAllModal } from './group-detail/SettleAllModal';
 import { InvitationBox } from './group-detail/InvitationBox';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
-import { useAppSelector } from '../store/hooks';
+import { useAppSelector, useAppDispatch } from '../store/hooks';
+import { settleAllApi, fetchExchangeRates } from '../store/slices/groupSlice';
 import { type GroupSettlement } from '../types/group.types';
 import { calculateSettlements, isBalanceSettled } from '../lib/accounting';
+import type { Currency } from '../lib/currency';
 
 export function GroupDetail() {
     const navigate = useNavigate();
@@ -34,6 +37,7 @@ export function GroupDetail() {
         currency,
         groupName,
         activeGroup,
+        activeGroupId,
         fetchGroupById,
         settleUp,
         leaveGroup,
@@ -50,6 +54,20 @@ export function GroupDetail() {
     const [leaveError, setLeaveError] = useState<string | null>(null);
     const [isDeletingGroup, setIsDeletingGroup] = useState(false);
     const [deleteGroupError, setDeleteGroupError] = useState<string | null>(null);
+    const [settlingAllItems, setSettlingAllItems] = useState<GroupSettlement[] | null>(null);
+    const [isSettlingAll, setIsSettlingAll] = useState(false);
+    const [displayCurrency, setDisplayCurrency] = useState<Currency>('USD');
+    const dispatch = useAppDispatch();
+    const exchangeRates = useAppSelector((state) => state.groups.exchangeRates);
+
+    // Always fetch with base=USD - the scheduled backend job only ever caches
+    // rates with USD as the base (see Task 2), so this must not depend on
+    // displayCurrency. SettleAllModal's convert() computes arbitrary
+    // cross-rates (rate(A->B) = rates[B]/rates[A]) from this single table,
+    // regardless of which currency the user picks to view the total in.
+    useEffect(() => {
+        dispatch(fetchExchangeRates('USD'));
+    }, [dispatch]);
 
     // Fetch group details on mount or ID change
     useEffect(() => {
@@ -155,6 +173,30 @@ export function GroupDetail() {
             } finally {
                 setIsSettling(false);
             }
+        }
+    };
+
+    const handleSettleAllClick = (items: GroupSettlement[]) => {
+        setSettlingAllItems(items);
+    };
+
+    const handleConfirmSettleAll = async () => {
+        if (!settlingAllItems || settlingAllItems.length === 0) return;
+        setIsSettlingAll(true);
+        try {
+            await dispatch(settleAllApi({
+                groupId: activeGroupId,
+                data: {
+                    fromId: settlingAllItems[0].from.memberId,
+                    toId: settlingAllItems[0].to.memberId,
+                    items: settlingAllItems.map((i) => ({ currency: i.currency, amount: i.amount })),
+                },
+                idempotencyKey: crypto.randomUUID(),
+            })).unwrap();
+            setSettlingAllItems(null);
+            await fetchGroupById(activeGroupId);
+        } finally {
+            setIsSettlingAll(false);
         }
     };
 
@@ -346,6 +388,7 @@ export function GroupDetail() {
                         getMemberName={getMemberName}
                         getMemberAvatar={getMemberAvatar}
                         onSettle={handleSettleClick}
+                        onSettleAll={handleSettleAllClick}
                         currentMemberId={currentUserMember?.id}
                     />
                 </div>
@@ -399,6 +442,28 @@ export function GroupDetail() {
                     amount={settlingPayment.amount}
                     currency={settlingPayment.currency}
                     isLoading={isSettling}
+                />
+            )}
+
+            {settlingAllItems && (
+                <SettleAllModal
+                    isOpen={!!settlingAllItems}
+                    onClose={() => setSettlingAllItems(null)}
+                    onConfirm={handleConfirmSettleAll}
+                    items={settlingAllItems}
+                    fromMember={{
+                        name: getMemberName(settlingAllItems[0].from.memberId),
+                        avatar: getMemberAvatar(settlingAllItems[0].from.memberId),
+                    }}
+                    toMember={{
+                        name: getMemberName(settlingAllItems[0].to.memberId),
+                        avatar: getMemberAvatar(settlingAllItems[0].to.memberId),
+                    }}
+                    displayCurrency={displayCurrency}
+                    onDisplayCurrencyChange={setDisplayCurrency}
+                    rates={exchangeRates?.rates ?? {}}
+                    ratesBase={exchangeRates?.base ?? 'USD'}
+                    isLoading={isSettlingAll}
                 />
             )}
         </div>
