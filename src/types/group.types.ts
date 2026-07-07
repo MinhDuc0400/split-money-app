@@ -90,3 +90,21 @@ export interface CreateSettlementRequest {
     currency: string;
     note?: string;
 }
+
+export interface ExchangeRatesResponse {
+    base: string;
+    date: string | null;
+    rates: Record<string, number>;
+    stale: boolean;
+}
+
+export interface SettleAllItem {
+    currency: string;
+    amount: number;
+}
+
+export interface SettleAllRequest {
+    fromId: string;
+    toId: string;
+    items: SettleAllItem[];
+}

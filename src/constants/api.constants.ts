@@ -16,6 +16,7 @@ export const API_ENDPOINTS = {
         BALANCE_ME: (id: string) => `${API_BASE_URL}/groups/${id}/balances/me`,
         BALANCES: (id: string) => `${API_BASE_URL}/groups/${id}/balances`,
         SETTLEMENTS: (id: string) => `${API_BASE_URL}/groups/${id}/settlements`,
+        SETTLE_ALL: (id: string) => `${API_BASE_URL}/groups/${id}/settlements/settle-all`,
         EXPENSE_BY_ID: (groupId: string, expenseId: string) => `${API_BASE_URL}/groups/${groupId}/expenses/${expenseId}`,
         LEAVE: (id: string) => `${API_BASE_URL}/groups/${id}/leave`,
     },
@@ -26,4 +27,5 @@ export const API_ENDPOINTS = {
     BALANCES: {
         SUMMARY: `${API_BASE_URL}/balances/summary`,
     },
+    EXCHANGE_RATES: (base: string) => `${API_BASE_URL}/exchange-rates?base=${base}`,
 };

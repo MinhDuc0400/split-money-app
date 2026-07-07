@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/tool
 import type { HistoryTransaction } from '../../types/expense.types';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
 import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
-import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest } from '../../types/group.types';
+import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest, ExchangeRatesResponse, SettleAllRequest } from '../../types/group.types';
 import type { Member } from '../../types/member.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants/api.constants';
@@ -24,6 +24,7 @@ interface GroupState {
     groupBalances: GroupBalancesResponse | null;
     membersByGroupId: Record<string, Member[]>;
     balanceSummary: Record<string, BalanceSummaryByCurrency> | null;
+    exchangeRates: ExchangeRatesResponse | null;
     error: string | null;
 }
 
@@ -38,6 +39,7 @@ const initialState: GroupState = {
     groupBalances: null,
     membersByGroupId: {},
     balanceSummary: null,
+    exchangeRates: null,
     error: null,
 };
 
@@ -133,6 +135,22 @@ export const createSettlement = createAsyncThunk(
     async ({ groupId, data, idempotencyKey }: { groupId: string; data: CreateSettlementRequest; idempotencyKey?: string }) => {
         return await api.post<GroupSettlement>(API_ENDPOINTS.GROUPS.SETTLEMENTS(groupId), data, {
             headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+        });
+    }
+);
+
+export const fetchExchangeRates = createAsyncThunk(
+    'groups/fetchExchangeRates',
+    async (baseCurrency: string) => {
+        return await api.get<ExchangeRatesResponse>(API_ENDPOINTS.EXCHANGE_RATES(baseCurrency));
+    }
+);
+
+export const settleAllApi = createAsyncThunk(
+    'groups/settleAll',
+    async ({ groupId, data, idempotencyKey }: { groupId: string; data: SettleAllRequest; idempotencyKey: string }) => {
+        return await api.post<{ settlements: GroupSettlement[] }>(API_ENDPOINTS.GROUPS.SETTLE_ALL(groupId), data, {
+            headers: { 'Idempotency-Key': idempotencyKey },
         });
     }
 );
@@ -440,6 +458,22 @@ const groupSlice = createSlice({
             .addCase(createSettlement.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to create settlement';
+            })
+            // Fetch Exchange Rates
+            .addCase(fetchExchangeRates.fulfilled, (state, action) => {
+                state.exchangeRates = action.payload;
+            })
+            // Settle All
+            .addCase(settleAllApi.pending, (state) => {
+                state.isLoading = true;
+                state.error = null;
+            })
+            .addCase(settleAllApi.fulfilled, (state) => {
+                state.isLoading = false;
+            })
+            .addCase(settleAllApi.rejected, (state, action) => {
+                state.isLoading = false;
+                state.error = action.error.message || 'Failed to settle all';
             });
     },
 });
