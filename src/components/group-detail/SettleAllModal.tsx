@@ -16,6 +16,7 @@ interface SettleAllModalProps {
     rates: Record<string, number>;
     ratesBase: string;
     isLoading?: boolean;
+    error?: string | null;
 }
 
 function convert(amount: number, fromCurrency: string, toCurrency: string, rates: Record<string, number>, base: string): number | null {
@@ -38,6 +39,7 @@ export function SettleAllModal({
     rates,
     ratesBase,
     isLoading = false,
+    error = null,
 }: SettleAllModalProps) {
     const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
@@ -136,6 +138,10 @@ export function SettleAllModal({
                                     </select>
                                 )}
                             </div>
+
+                            {error && (
+                                <p className="text-sm text-destructive">{error}</p>
+                            )}
 
                             <div className="flex gap-3 pt-2">
                                 <button

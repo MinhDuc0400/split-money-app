@@ -56,6 +56,7 @@ export function GroupDetail() {
     const [deleteGroupError, setDeleteGroupError] = useState<string | null>(null);
     const [settlingAllItems, setSettlingAllItems] = useState<GroupSettlement[] | null>(null);
     const [isSettlingAll, setIsSettlingAll] = useState(false);
+    const [settleAllError, setSettleAllError] = useState<string | null>(null);
     const [displayCurrency, setDisplayCurrency] = useState<Currency>('USD');
     const dispatch = useAppDispatch();
     const exchangeRates = useAppSelector((state) => state.groups.exchangeRates);
@@ -182,6 +183,7 @@ export function GroupDetail() {
 
     const handleConfirmSettleAll = async () => {
         if (!settlingAllItems || settlingAllItems.length === 0) return;
+        if (!activeGroupId) return;
         setIsSettlingAll(true);
         try {
             await dispatch(settleAllApi({
@@ -194,7 +196,11 @@ export function GroupDetail() {
                 idempotencyKey: crypto.randomUUID(),
             })).unwrap();
             setSettlingAllItems(null);
+            setSettleAllError(null);
             await fetchGroupById(activeGroupId);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to settle all';
+            setSettleAllError(msg);
         } finally {
             setIsSettlingAll(false);
         }
@@ -448,7 +454,7 @@ export function GroupDetail() {
             {settlingAllItems && (
                 <SettleAllModal
                     isOpen={!!settlingAllItems}
-                    onClose={() => setSettlingAllItems(null)}
+                    onClose={() => { setSettlingAllItems(null); setSettleAllError(null); }}
                     onConfirm={handleConfirmSettleAll}
                     items={settlingAllItems}
                     fromMember={{
@@ -464,6 +470,7 @@ export function GroupDetail() {
                     rates={exchangeRates?.rates ?? {}}
                     ratesBase={exchangeRates?.base ?? 'USD'}
                     isLoading={isSettlingAll}
+                    error={settleAllError}
                 />
             )}
         </div>

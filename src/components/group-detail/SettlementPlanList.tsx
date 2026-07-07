@@ -49,7 +49,7 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
             <div className="space-y-4">
                 {groups.length === 0 ? (
                     <div className="text-center py-12 border-2 border-dashed border-border/50 rounded-xl">
-                        <p className="text-muted-foreground">No debts found. Everyone is settled up!</p>
+                        <p className="text-muted-foreground">No debts found. Everyone is settled up.</p>
                     </div>
                 ) : (
                     groups.map((group, idx) => {
