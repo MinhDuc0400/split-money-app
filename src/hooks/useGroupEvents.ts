@@ -4,6 +4,7 @@ import { getSocket } from '../lib/socket';
 import {
     fetchTransactions,
     fetchGroupBalances,
+    fetchUserBalance,
     socketExpenseAdded,
     socketExpenseUpdated,
     socketExpenseDeleted,
@@ -27,9 +28,13 @@ export function useGroupEvents(groupId: string) {
 
         // Shared by all expense-change events: patch local state immediately,
         // then resync the derived transactions/balances views from the server.
+        // Includes fetchUserBalance so a member who *didn't* trigger the
+        // change (only received it over the socket) still gets their own
+        // owed/owe summary refreshed, not just the group-wide balances map.
         const refreshDerivedExpenseViews = () => {
             dispatch(fetchTransactions(groupId));
             dispatch(fetchGroupBalances(groupId));
+            dispatch(fetchUserBalance(groupId));
         };
 
         const onExpenseCreated = (payload: Expense & { groupId: string }) => {
@@ -50,6 +55,7 @@ export function useGroupEvents(groupId: string) {
         const onSettlementUpdated = (payload: { groupId: string; settlement: GroupSettlement }) => {
             dispatch(socketSettlementAdded(payload));
             dispatch(fetchGroupBalances(groupId));
+            dispatch(fetchUserBalance(groupId));
         };
 
         const onMemberJoined = (payload: GroupMember) => {

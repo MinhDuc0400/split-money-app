@@ -9,13 +9,19 @@ import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { WelcomeView } from './dashboard/WelcomeView';
 import { useEffect, useMemo } from 'react';
 import { isBalanceSettled } from '../lib/accounting';
+import { useAppSelector } from '../store/hooks';
 
 export function Dashboard() {
     const navigate = useNavigate();
     const { id } = useParams<{ id: string }>();
     useGroupEvents(id ?? '');
     const { groups, members, expenses, balances, currency, groupName, isLoading, error, activeGroupId, switchGroup, currentUserBalance } = useGroup();
-    const localCalc = useBalanceCalculations({ balances });
+    const authUser = useAppSelector(state => state.auth.user);
+    const currentMemberId = useMemo(
+        () => members.find(m => m.userId === authUser?.id)?.id,
+        [members, authUser],
+    );
+    const localCalc = useBalanceCalculations({ balances, currentMemberId });
     const { owedToYou, youOwe } = useMemo(() => {
         if (currentUserBalance && Object.keys(currentUserBalance.balances).length > 0) {
             const owed: Array<{ currency: string; amount: number }> = [];

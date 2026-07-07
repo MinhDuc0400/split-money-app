@@ -57,8 +57,13 @@ export function GroupDetail() {
         }
     }, [routeId, fetchGroupById]);
 
+    const currentMemberId = useMemo(
+        () => members.find(m => m.userId === authUser?.id)?.id,
+        [members, authUser],
+    );
+
     // Personal balance summary - prefer server data, fallback to local calculation
-    const localBalances = useBalanceCalculations({ balances });
+    const localBalances = useBalanceCalculations({ balances, currentMemberId });
     const { owedToYou, youOwe } = useMemo(() => {
         if (currentUserBalance && Object.keys(currentUserBalance.balances).length > 0) {
             const owed: Array<{ currency: string; amount: number }> = [];
