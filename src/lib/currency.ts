@@ -1,43 +1,38 @@
 // Currency types and utilities
 
 export const Currency = {
-    USD: 'USD',
-    VND: 'VND',
-    EUR: 'EUR',
-    GBP: 'GBP',
-    JPY: 'JPY',
-    THB: 'THB'
+    USD: 'USD', EUR: 'EUR', GBP: 'GBP', JPY: 'JPY', VND: 'VND', THB: 'THB',
+    AUD: 'AUD', CAD: 'CAD', CHF: 'CHF', CNY: 'CNY', HKD: 'HKD', SGD: 'SGD',
+    KRW: 'KRW', INR: 'INR', IDR: 'IDR', MYR: 'MYR', PHP: 'PHP', NZD: 'NZD',
+    SEK: 'SEK', NOK: 'NOK', DKK: 'DKK', PLN: 'PLN', CZK: 'CZK', TRY: 'TRY',
+    ZAR: 'ZAR', BRL: 'BRL', MXN: 'MXN', ILS: 'ILS', AED: 'AED', SAR: 'SAR',
 } as const;
 
 export type Currency = typeof Currency[keyof typeof Currency];
 
-export const CURRENCIES: Currency[] = [
-    Currency.USD,
-    Currency.VND,
-    Currency.EUR,
-    Currency.GBP,
-    Currency.JPY,
-    Currency.THB
-];
+export const CURRENCIES: Currency[] = Object.values(Currency);
 
 // Currency symbols mapping
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
-    USD: '$',
-    VND: '₫',
-    EUR: '€',
-    GBP: '£',
-    JPY: '¥',
-    THB: '฿'
+    USD: '$', EUR: '€', GBP: '£', JPY: '¥', VND: '₫', THB: '฿',
+    AUD: 'A$', CAD: 'C$', CHF: 'Fr', CNY: '¥', HKD: 'HK$', SGD: 'S$',
+    KRW: '₩', INR: '₹', IDR: 'Rp', MYR: 'RM', PHP: '₱', NZD: 'NZ$',
+    SEK: 'kr', NOK: 'kr', DKK: 'kr', PLN: 'zł', CZK: 'Kč', TRY: '₺',
+    ZAR: 'R', BRL: 'R$', MXN: 'MX$', ILS: '₪', AED: 'د.إ', SAR: '﷼',
 };
 
 // Currency names for display
 export const CURRENCY_NAMES: Record<Currency, string> = {
-    USD: 'US Dollar',
-    VND: 'Vietnamese Dong',
-    EUR: 'Euro',
-    GBP: 'British Pound',
-    JPY: 'Japanese Yen',
-    THB: 'Thai Baht'
+    USD: 'US Dollar', EUR: 'Euro', GBP: 'British Pound', JPY: 'Japanese Yen',
+    VND: 'Vietnamese Dong', THB: 'Thai Baht', AUD: 'Australian Dollar',
+    CAD: 'Canadian Dollar', CHF: 'Swiss Franc', CNY: 'Chinese Yuan',
+    HKD: 'Hong Kong Dollar', SGD: 'Singapore Dollar', KRW: 'South Korean Won',
+    INR: 'Indian Rupee', IDR: 'Indonesian Rupiah', MYR: 'Malaysian Ringgit',
+    PHP: 'Philippine Peso', NZD: 'New Zealand Dollar', SEK: 'Swedish Krona',
+    NOK: 'Norwegian Krone', DKK: 'Danish Krone', PLN: 'Polish Złoty',
+    CZK: 'Czech Koruna', TRY: 'Turkish Lira', ZAR: 'South African Rand',
+    BRL: 'Brazilian Real', MXN: 'Mexican Peso', ILS: 'Israeli Shekel',
+    AED: 'UAE Dirham', SAR: 'Saudi Riyal',
 };
 
 /**
