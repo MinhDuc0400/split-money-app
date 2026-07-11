@@ -9,7 +9,6 @@ import { SettlementPlanList } from './group-detail/SettlementPlanList';
 import { MemberBalancesList } from './group-detail/MemberBalancesList';
 import { HistoryList } from './group-detail/HistoryList';
 import { EditExpenseModal } from './group-detail/EditExpenseModal';
-import { DeleteConfirmationModal } from './group-detail/DeleteConfirmationModal';
 import { SettleUpModal } from './group-detail/SettleUpModal';
 import { SettleAllModal } from './group-detail/SettleAllModal';
 import { InvitationBox } from './group-detail/InvitationBox';
@@ -18,7 +17,9 @@ import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
 import { settleAllApi, fetchExchangeRates } from '../store/slices/groupSlice';
+import { pendingDeleteAdded } from '../store/slices/pendingDeletesSlice';
 import { type GroupSettlement } from '../types/group.types';
+import type { TransactionHistoryMap } from '../types/expense.types';
 import { calculateSettlements, isBalanceSettled } from '../lib/accounting';
 import type { Currency } from '../lib/currency';
 
@@ -33,7 +34,6 @@ export function GroupDetail() {
         currentUserBalance,
         groupBalances,
         balances,
-        deleteExpense,
         updateExpense,
         currency,
         groupName,
@@ -46,9 +46,7 @@ export function GroupDetail() {
     } = useGroup();
     const authUser = useAppSelector(state => state.auth.user);
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
-    const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
     const [settlingPayment, setSettlingPayment] = useState<GroupSettlement | null>(null);
-    const [isDeleting, setIsDeleting] = useState(false);
     const [isSettling, setIsSettling] = useState(false);
     const [isUpdatingExpense, setIsUpdatingExpense] = useState(false);
     const [isLeavingGroup, setIsLeavingGroup] = useState(false);
@@ -61,6 +59,7 @@ export function GroupDetail() {
     const [displayCurrency, setDisplayCurrency] = useState<Currency>('USD');
     const dispatch = useAppDispatch();
     const exchangeRates = useAppSelector((state) => state.groups.exchangeRates);
+    const pendingDeletes = useAppSelector(state => state.pendingDeletes.items);
     const [isAddingExpense, setIsAddingExpense] = useState(false);
 
     // Always fetch with base=USD - the scheduled backend job only ever caches
@@ -112,6 +111,18 @@ export function GroupDetail() {
     const getMemberName = useCallback((id: string) => memberMap[id]?.name || 'Unknown', [memberMap]);
     const getMemberAvatar = useCallback((id: string) => memberMap[id]?.avatar, [memberMap]);
 
+    const visibleExpenses = useMemo(
+        () => expenses.filter(e => !pendingDeletes[e.id]),
+        [expenses, pendingDeletes]
+    );
+    const visibleTransactions = useMemo(() => {
+        const filtered: TransactionHistoryMap = {};
+        Object.entries(transactions).forEach(([month, items]) => {
+            filtered[month] = items.filter(item => !pendingDeletes[item.id]);
+        });
+        return filtered;
+    }, [transactions, pendingDeletes]);
+
     // Settlement plan derived from server-side member balances.
     // groupBalances is re-fetched after every settle-up so this stays accurate —
     // no fallback to local expense-math that doesn't account for settlements.
@@ -142,19 +153,14 @@ export function GroupDetail() {
     };
 
     const handleDeleteClick = (id: string) => {
-        setDeletingExpenseId(id);
-    };
-
-    const handleConfirmDelete = async () => {
-        if (deletingExpenseId) {
-            setIsDeleting(true);
-            try {
-                await deleteExpense(deletingExpenseId);
-                setDeletingExpenseId(null);
-            } finally {
-                setIsDeleting(false);
-            }
-        }
+        if (!activeGroupId) return;
+        const target = expenses.find(e => e.id === id);
+        dispatch(pendingDeleteAdded({
+            expenseId: id,
+            groupId: activeGroupId,
+            description: target?.description ?? 'Expense',
+            expiresAt: Date.now() + 8000,
+        }));
     };
 
     const handleSettleClick = (settlement: GroupSettlement) => {
@@ -408,8 +414,8 @@ export function GroupDetail() {
                 </div>
 
                 <HistoryList
-                    expenses={expenses}
-                    transactions={transactions}
+                    expenses={visibleExpenses}
+                    transactions={visibleTransactions}
                     currency={currency}
                     getMemberName={getMemberName}
                     onEdit={handleEditClick}
@@ -425,13 +431,6 @@ export function GroupDetail() {
                 onClose={() => { setEditingExpenseId(null); }}
                 onSubmit={handleUpdateExpense}
                 isSubmitting={isUpdatingExpense}
-            />
-
-            <DeleteConfirmationModal
-                isOpen={!!deletingExpenseId}
-                onClose={() => setDeletingExpenseId(null)}
-                onConfirm={handleConfirmDelete}
-                isLoading={isDeleting}
             />
 
             {settlingPayment && (

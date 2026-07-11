@@ -22,6 +22,7 @@ export function UndoToastContainer() {
 
             const delay = Math.max(0, entry.expiresAt - Date.now());
             timers.current[entry.expenseId] = setTimeout(() => {
+                // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
                 delete timers.current[entry.expenseId];
                 dispatch(deleteExpense({ groupId: entry.groupId, expenseId: entry.expenseId }))
                     .unwrap()
@@ -41,6 +42,7 @@ export function UndoToastContainer() {
         Object.keys(timers.current).forEach((expenseId) => {
             if (!pendingDeletes[expenseId]) {
                 clearTimeout(timers.current[expenseId]);
+                // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
                 delete timers.current[expenseId];
             }
         });
@@ -57,6 +59,7 @@ export function UndoToastContainer() {
         const timer = timers.current[expenseId];
         if (timer) {
             clearTimeout(timer);
+            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
             delete timers.current[expenseId];
         }
         dispatch(pendingDeleteCancelled(expenseId));

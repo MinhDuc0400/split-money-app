@@ -8,6 +8,7 @@ import { AuthCallback } from './components/auth/AuthCallback';
 
 import { useSelector } from 'react-redux';
 import { SocketManager } from './components/SocketManager';
+import { UndoToastContainer } from './components/UndoToastContainer';
 import type { RootState } from './store';
 
 // Redux
@@ -65,6 +66,7 @@ function AppInner() {
                     <AddExpense onClose={handleCloseAddExpense} />
                 </Suspense>
             ) : null}
+            <UndoToastContainer />
         </Layout>
     );
 }
