@@ -4,6 +4,7 @@ import storage from 'redux-persist/lib/storage'; // defaults to localStorage
 import groupReducer from './slices/groupSlice';
 import financeReducer from './slices/financeSlice';
 import authReducer from './slices/authSlice';
+import pendingDeletesReducer from './slices/pendingDeletesSlice';
 import { logout } from './slices/authSlice';
 import { registerUnauthorizedHandler } from '../lib/api';
 
@@ -11,6 +12,7 @@ const rootReducer = combineReducers({
     groups: groupReducer,
     finance: financeReducer,
     auth: authReducer,
+    pendingDeletes: pendingDeletesReducer,
 });
 
 const migrations = {};
@@ -20,7 +22,7 @@ const persistConfig = {
     storage,
     version: 1,
     migrate: createMigrate(migrations, { debug: false }),
-    blacklist: ['groups', 'finance'],
+    blacklist: ['groups', 'finance', 'pendingDeletes'],
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
