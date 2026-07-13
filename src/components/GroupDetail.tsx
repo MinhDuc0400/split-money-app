@@ -16,7 +16,7 @@ import { AddExpense } from './AddExpense';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { settleAllApi, fetchExchangeRates } from '../store/slices/groupSlice';
+import { settleAllApi, fetchExchangeRates, settleGuestApi } from '../store/slices/groupSlice';
 import { pendingDeleteAdded } from '../store/slices/pendingDeletesSlice';
 import { type GroupSettlement } from '../types/group.types';
 import type { TransactionHistoryMap } from '../types/expense.types';
@@ -110,6 +110,7 @@ export function GroupDetail() {
     );
     const getMemberName = useCallback((id: string) => memberMap[id]?.name || 'Unknown', [memberMap]);
     const getMemberAvatar = useCallback((id: string) => memberMap[id]?.avatar, [memberMap]);
+    const isGuestMember = useCallback((id: string) => memberMap[id]?.isGuest ?? false, [memberMap]);
 
     const visibleExpenses = useMemo(
         () => expenses.filter(e => !pendingDeletes[e.id]),
@@ -168,20 +169,31 @@ export function GroupDetail() {
     };
 
     const handleConfirmSettle = async (amount: number, note: string) => {
-        if (settlingPayment) {
-            setIsSettling(true);
-            try {
+        if (!settlingPayment || !activeGroupId) return;
+        setIsSettling(true);
+        try {
+            if (isGuestMember(settlingPayment.from.memberId)) {
+                await dispatch(settleGuestApi({
+                    groupId: activeGroupId,
+                    data: {
+                        guestMemberId: settlingPayment.from.memberId,
+                        currency: settlingPayment.currency,
+                        amount,
+                    },
+                    idempotencyKey: crypto.randomUUID(),
+                })).unwrap();
+            } else {
                 await settleUp({
                     fromId: settlingPayment.from.memberId,
                     toId: settlingPayment.to.memberId,
                     amount,
                     currency: settlingPayment.currency,
-                    note
+                    note,
                 });
-                setSettlingPayment(null);
-            } finally {
-                setIsSettling(false);
             }
+            setSettlingPayment(null);
+        } finally {
+            setIsSettling(false);
         }
     };
 
@@ -190,24 +202,38 @@ export function GroupDetail() {
     };
 
     const handleConfirmSettleAll = async () => {
-        if (!settlingAllItems || settlingAllItems.length === 0) return;
-        if (!activeGroupId) return;
+        if (!settlingAllItems || settlingAllItems.length === 0 || !activeGroupId) return;
         setIsSettlingAll(true);
+        const isGuestDebtor = isGuestMember(settlingAllItems[0].from.memberId);
         try {
-            await dispatch(settleAllApi({
-                groupId: activeGroupId,
-                data: {
-                    fromId: settlingAllItems[0].from.memberId,
-                    toId: settlingAllItems[0].to.memberId,
-                    items: settlingAllItems.map((i) => ({ currency: i.currency, amount: i.amount })),
-                },
-                idempotencyKey: crypto.randomUUID(),
-            })).unwrap();
+            if (isGuestDebtor) {
+                for (const item of settlingAllItems) {
+                    await dispatch(settleGuestApi({
+                        groupId: activeGroupId,
+                        data: {
+                            guestMemberId: item.from.memberId,
+                            currency: item.currency,
+                            amount: item.amount,
+                        },
+                        idempotencyKey: crypto.randomUUID(),
+                    })).unwrap();
+                }
+            } else {
+                await dispatch(settleAllApi({
+                    groupId: activeGroupId,
+                    data: {
+                        fromId: settlingAllItems[0].from.memberId,
+                        toId: settlingAllItems[0].to.memberId,
+                        items: settlingAllItems.map((i) => ({ currency: i.currency, amount: i.amount })),
+                    },
+                    idempotencyKey: crypto.randomUUID(),
+                })).unwrap();
+            }
             setSettlingAllItems(null);
             setSettleAllError(null);
             await fetchGroupById(activeGroupId);
         } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to settle all';
+            const msg = err instanceof Error ? err.message : 'Failed to settle';
             setSettleAllError(msg);
         } finally {
             setIsSettlingAll(false);
@@ -380,7 +406,7 @@ export function GroupDetail() {
                 settlements={settlementPlan}
                 getMemberName={getMemberName}
                 getMemberAvatar={getMemberAvatar}
-                isGuestMember={(id) => memberMap[id]?.isGuest ?? false}
+                isGuestMember={isGuestMember}
                 onSettle={handleSettleClick}
                 onSettleAll={handleSettleAllClick}
                 currentMemberId={currentUserMember?.id}
@@ -449,6 +475,8 @@ export function GroupDetail() {
                     amount={settlingPayment.amount}
                     currency={settlingPayment.currency}
                     isLoading={isSettling}
+                    title={isGuestMember(settlingPayment.from.memberId) ? 'Mark as received' : 'Record payment'}
+                    confirmLabel={isGuestMember(settlingPayment.from.memberId) ? 'Mark as received' : 'Record payment'}
                 />
             )}
 
@@ -472,6 +500,7 @@ export function GroupDetail() {
                     ratesBase={exchangeRates?.base ?? 'USD'}
                     isLoading={isSettlingAll}
                     error={settleAllError}
+                    title={settlingAllItems[0] && isGuestMember(settlingAllItems[0].from.memberId) ? 'Mark all as received' : undefined}
                 />
             )}
 
