@@ -16,10 +16,9 @@ import { AddExpense } from './AddExpense';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { settleAllApi, fetchExchangeRates, settleGuestApi } from '../store/slices/groupSlice';
+import { settleAllApi, fetchExchangeRates, settleGuestApi, fetchTransactionsNextPage } from '../store/slices/groupSlice';
 import { pendingDeleteAdded } from '../store/slices/pendingDeletesSlice';
 import { type GroupSettlement } from '../types/group.types';
-import type { TransactionHistoryMap } from '../types/expense.types';
 import { calculateSettlements, isBalanceSettled } from '../lib/accounting';
 import type { Currency } from '../lib/currency';
 
@@ -112,17 +111,17 @@ export function GroupDetail() {
     const getMemberAvatar = useCallback((id: string) => memberMap[id]?.avatar, [memberMap]);
     const isGuestMember = useCallback((id: string) => memberMap[id]?.isGuest ?? false, [memberMap]);
 
-    const visibleExpenses = useMemo(
-        () => expenses.filter(e => !pendingDeletes[e.id]),
-        [expenses, pendingDeletes]
+
+    const visibleTransactionItems = useMemo(
+        () => transactions.items.filter(item => !pendingDeletes[item.id]),
+        [transactions.items, pendingDeletes]
     );
-    const visibleTransactions = useMemo(() => {
-        const filtered: TransactionHistoryMap = {};
-        Object.entries(transactions).forEach(([month, items]) => {
-            filtered[month] = items.filter(item => !pendingDeletes[item.id]);
-        });
-        return filtered;
-    }, [transactions, pendingDeletes]);
+
+    const handleLoadMore = useCallback(() => {
+        if (activeGroupId) {
+            void dispatch(fetchTransactionsNextPage(activeGroupId));
+        }
+    }, [activeGroupId, dispatch]);
 
     // Settlement plan derived from server-side member balances.
     // groupBalances is re-fetched after every settle-up so this stays accurate —
@@ -440,8 +439,11 @@ export function GroupDetail() {
                 </div>
 
                 <HistoryList
-                    expenses={visibleExpenses}
-                    transactions={visibleTransactions}
+                    items={visibleTransactionItems}
+                    hasMore={transactions.hasMore}
+                    isLoadingMore={transactions.isLoadingMore}
+                    loadMoreError={transactions.loadMoreError}
+                    onLoadMore={handleLoadMore}
                     currency={currency}
                     getMemberName={getMemberName}
                     onEdit={handleEditClick}

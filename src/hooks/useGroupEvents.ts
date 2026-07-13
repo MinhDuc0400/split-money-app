@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { getSocket } from '../lib/socket';
 import {
-    fetchTransactions,
+    fetchTransactionsFirstPage,
     fetchGroupBalances,
     fetchUserBalance,
+    setPendingRefresh,
     socketExpenseAdded,
     socketExpenseUpdated,
     socketExpenseDeleted,
@@ -20,19 +21,24 @@ import type { GroupMember, GroupMeta, GroupSettlement } from '../types/group.typ
 export function useGroupEvents(groupId: string) {
     const dispatch = useDispatch<AppDispatch>();
     const token = useSelector((state: RootState) => state.auth.token);
+    const isLoadingMore = useSelector((state: RootState) => state.groups.transactions.isLoadingMore);
+    const pendingRefresh = useSelector((state: RootState) => state.groups.transactions.pendingRefresh);
 
     useEffect(() => {
         if (!groupId || !token) return;
 
         const socket = getSocket(token);
 
-        // Shared by all expense-change events: patch local state immediately,
-        // then resync the derived transactions/balances views from the server.
-        // Includes fetchUserBalance so a member who *didn't* trigger the
-        // change (only received it over the socket) still gets their own
-        // owed/owe summary refreshed, not just the group-wide balances map.
+        const refreshTransactions = () => {
+            if (isLoadingMore) {
+                dispatch(setPendingRefresh(true));
+            } else {
+                dispatch(fetchTransactionsFirstPage(groupId));
+            }
+        };
+
         const refreshDerivedExpenseViews = () => {
-            dispatch(fetchTransactions(groupId));
+            refreshTransactions();
             dispatch(fetchGroupBalances(groupId));
             dispatch(fetchUserBalance(groupId));
         };
@@ -56,7 +62,7 @@ export function useGroupEvents(groupId: string) {
             dispatch(socketSettlementAdded(payload));
             dispatch(fetchGroupBalances(groupId));
             dispatch(fetchUserBalance(groupId));
-            dispatch(fetchTransactions(groupId));
+            refreshTransactions();
         };
 
         const onMemberJoined = (payload: GroupMember) => {
@@ -78,8 +84,6 @@ export function useGroupEvents(groupId: string) {
         if (socket.connected) {
             joinGroup();
         }
-        // Use `on` (not `once`) so the room is rejoined after every
-        // socket.io auto-reconnect, not just the first connect.
         socket.on('connect', joinGroup);
 
         socket.on('expense_created', onExpenseCreated);
@@ -101,5 +105,12 @@ export function useGroupEvents(groupId: string) {
             socket.off('member_left', onMemberLeft);
             socket.off('group_updated', onGroupUpdated);
         };
-    }, [groupId, token, dispatch]);
+    }, [groupId, token, dispatch, isLoadingMore]);
+
+    // Deferred refresh: fire first page once isLoadingMore clears
+    useEffect(() => {
+        if (pendingRefresh && !isLoadingMore) {
+            dispatch(fetchTransactionsFirstPage(groupId));
+        }
+    }, [pendingRefresh, isLoadingMore, groupId, dispatch]);
 }

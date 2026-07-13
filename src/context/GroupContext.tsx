@@ -2,13 +2,13 @@ import React, { createContext, useContext, useMemo, useEffect, useCallback } fro
 import { type Member } from '../types/member.types';
 import { type Transaction } from '../types/expense.types';
 import { type GroupMeta, type GroupDetail, type GroupMember, type UserBalanceResponse, type GroupSettlement, type GroupBalancesResponse, type CreateSettlementRequest } from '../types/group.types';
-import { type Expense, type CreateExpenseRequest, type UpdateExpenseRequest, type TransactionHistoryMap } from '../types/expense.types';
+import { type Expense, type CreateExpenseRequest, type UpdateExpenseRequest, type HistoryTransaction } from '../types/expense.types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactions, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary, leaveGroupApi, addGuest, renameGuest, removeGuest
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactionsFirstPage, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary, leaveGroupApi, addGuest, renameGuest, removeGuest
 } from '../store/slices/groupSlice';
 import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
@@ -20,7 +20,14 @@ interface GroupContextType {
     currency: string;
     members: Member[];
     expenses: Expense[];
-    transactions: TransactionHistoryMap;
+    transactions: {
+        items: HistoryTransaction[];
+        nextCursor: string | null;
+        hasMore: boolean;
+        isLoadingMore: boolean;
+        loadMoreError: string | null;
+        pendingRefresh: boolean;
+    };
     currentUserBalance: UserBalanceResponse | null;
     serverSettlements: GroupSettlement[];
     groupBalances: GroupBalancesResponse | null;
@@ -186,7 +193,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
     const handleFetchGroupById = useCallback(async (id: string) => {
         await Promise.all([
             dispatch(fetchGroupById(id)).unwrap(),
-            dispatch(fetchTransactions(id)).unwrap(),
+            dispatch(fetchTransactionsFirstPage(id)).unwrap(),
             dispatch(fetchUserBalance(id)).unwrap(),
             dispatch(fetchSettlements(id)).unwrap(),
             dispatch(fetchGroupBalances(id)).unwrap()

@@ -79,3 +79,9 @@ export interface HistoryTransaction {
 }
 
 export type TransactionHistoryMap = Record<string, HistoryTransaction[]>;
+
+export interface PaginatedHistoryResponse {
+    items: HistoryTransaction[];
+    nextCursor: string | null;
+    hasMore: boolean;
+}

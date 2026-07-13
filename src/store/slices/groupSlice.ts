@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { HistoryTransaction } from '../../types/expense.types';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
-import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
+import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, HistoryTransaction, PaginatedHistoryResponse } from '../../types/expense.types';
 import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest, ExchangeRatesResponse, SettleAllRequest, SettleGuestRequest } from '../../types/group.types';
 import type { Member } from '../../types/member.types';
 import { api } from '../../lib/api';
@@ -18,7 +17,14 @@ interface GroupState {
     activeGroup: GroupDetail | null;
     activeId: string | null;
     isLoading: boolean;
-    transactions: TransactionHistoryMap;
+    transactions: {
+        items: HistoryTransaction[];
+        nextCursor: string | null;
+        hasMore: boolean;
+        isLoadingMore: boolean;
+        loadMoreError: string | null;
+        pendingRefresh: boolean;
+    };
     currentUserBalance: UserBalanceResponse | null;
     serverSettlements: GroupSettlement[];
     groupBalances: GroupBalancesResponse | null;
@@ -33,7 +39,14 @@ const initialState: GroupState = {
     activeGroup: null,
     activeId: null,
     isLoading: false,
-    transactions: {},
+    transactions: {
+        items: [],
+        nextCursor: null,
+        hasMore: false,
+        isLoadingMore: false,
+        loadMoreError: null,
+        pendingRefresh: false,
+    },
     currentUserBalance: null,
     serverSettlements: [],
     groupBalances: null,
@@ -62,9 +75,18 @@ export const fetchGroupById = createAsyncThunk('groups/fetchById', async (id: st
     return await api.get<GroupDetail>(API_ENDPOINTS.GROUPS.BY_ID(id));
 });
 
-export const fetchTransactions = createAsyncThunk('groups/fetchTransactions', async (groupId: string) => {
-    return await api.get<TransactionHistoryMap>(API_ENDPOINTS.GROUPS.TRANSACTIONS(groupId));
+export const fetchTransactionsFirstPage = createAsyncThunk('groups/fetchTransactionsFirstPage', async (groupId: string) => {
+    return await api.get<PaginatedHistoryResponse>(API_ENDPOINTS.GROUPS.TRANSACTIONS(groupId));
 });
+
+export const fetchTransactionsNextPage = createAsyncThunk(
+    'groups/fetchTransactionsNextPage',
+    async (groupId: string, { getState }) => {
+        const state = (getState() as { groups: GroupState }).groups;
+        const cursor = state.transactions.nextCursor ?? undefined;
+        return await api.get<PaginatedHistoryResponse>(API_ENDPOINTS.GROUPS.TRANSACTIONS(groupId, cursor));
+    }
+);
 
 export const fetchUserBalance = createAsyncThunk('groups/fetchUserBalance', async (groupId: string) => {
     return await api.get<UserBalanceResponse>(API_ENDPOINTS.GROUPS.BALANCE_ME(groupId));
@@ -171,7 +193,7 @@ export const settleGuestApi = createAsyncThunk(
         );
         dispatch(fetchGroupBalances(groupId));
         dispatch(fetchUserBalance(groupId));
-        dispatch(fetchTransactions(groupId));
+        dispatch(fetchTransactionsFirstPage(groupId));
         return result;
     }
 );
@@ -262,6 +284,9 @@ const groupSlice = createSlice({
                 state.membersByGroupId[groupId] = list.filter(m => m.id !== memberId);
             }
         },
+        setPendingRefresh: (state, action: PayloadAction<boolean>) => {
+            state.transactions.pendingRefresh = action.payload;
+        },
         socketGroupUpdated: (state, action: PayloadAction<import('../../types/group.types').GroupMeta>) => {
             const updated = action.payload;
             const index = state.items.findIndex(g => g.id === updated.id);
@@ -269,7 +294,7 @@ const groupSlice = createSlice({
                 state.items[index] = { ...state.items[index], ...updated };
             }
             if (state.activeGroup && state.activeGroup.id === updated.id) {
-                state.activeGroup = { ...state.activeGroup, ...updated };
+                state.activeGroup = { ...state.activeGroup, ...(updated as unknown as import('../../types/group.types').GroupDetail) };
             }
         },
     },
@@ -372,24 +397,16 @@ const groupSlice = createSlice({
             })
             .addCase(updateExpense.fulfilled, (state, action) => {
                 state.isLoading = false;
-                // Update the transaction in the history map if it exists
-                const { groupId } = action.meta.arg;
                 const updatedExpense = action.payload;
-                if (state.transactions[groupId]) {
-                    const index = state.transactions[groupId].findIndex(t => t.id === updatedExpense.id);
-                    if (index !== -1) {
-                        // Note: HistoryTransaction might have a slightly different structure than Expense
-                        // But for now let's assume we need to refresh or if they match, update it.
-                        // Actually, HistoryTransaction has 'payers' with 'name', which 'Expense' might not have in the same way.
-                        // It's safer to just clear or mark for refresh, but let's try to update the basic fields.
-                        state.transactions[groupId][index] = {
-                            ...state.transactions[groupId][index],
-                            description: updatedExpense.description,
-                            amount: updatedExpense.amount,
-                            currency: updatedExpense.currency,
-                            date: updatedExpense.date,
-                        };
-                    }
+                const index = state.transactions.items.findIndex(t => t.id === updatedExpense.id);
+                if (index !== -1) {
+                    state.transactions.items[index] = {
+                        ...state.transactions.items[index],
+                        description: updatedExpense.description,
+                        amount: updatedExpense.amount,
+                        currency: updatedExpense.currency,
+                        date: updatedExpense.date,
+                    };
                 }
             })
             .addCase(updateExpense.rejected, (state, action) => {
@@ -404,9 +421,7 @@ const groupSlice = createSlice({
             .addCase(deleteExpense.fulfilled, (state, action) => {
                 state.isLoading = false;
                 const { groupId, expenseId } = action.payload;
-                if (state.transactions[groupId]) {
-                    state.transactions[groupId] = state.transactions[groupId].filter(t => t.id !== expenseId);
-                }
+                state.transactions.items = state.transactions.items.filter(t => t.id !== expenseId);
                 if (state.activeGroup && state.activeGroup.id === groupId) {
                     state.activeGroup._count.expenses = Math.max(0, state.activeGroup._count.expenses - 1);
                 }
@@ -415,18 +430,38 @@ const groupSlice = createSlice({
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to delete expense';
             })
-            // Fetch Transactions
-            .addCase(fetchTransactions.pending, (state) => {
+            // Fetch Transactions (first page — reset)
+            .addCase(fetchTransactionsFirstPage.pending, (state) => {
                 state.isLoading = true;
                 state.error = null;
             })
-            .addCase(fetchTransactions.fulfilled, (state, action) => {
+            .addCase(fetchTransactionsFirstPage.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.transactions = action.payload;
+                state.transactions.items = action.payload.items;
+                state.transactions.nextCursor = action.payload.nextCursor;
+                state.transactions.hasMore = action.payload.hasMore;
+                state.transactions.isLoadingMore = false;
+                state.transactions.loadMoreError = null;
+                state.transactions.pendingRefresh = false;
             })
-            .addCase(fetchTransactions.rejected, (state, action) => {
+            .addCase(fetchTransactionsFirstPage.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to fetch transactions';
+            })
+            // Fetch Transactions (next page — append)
+            .addCase(fetchTransactionsNextPage.pending, (state) => {
+                state.transactions.isLoadingMore = true;
+                state.transactions.loadMoreError = null;
+            })
+            .addCase(fetchTransactionsNextPage.fulfilled, (state, action) => {
+                state.transactions.isLoadingMore = false;
+                state.transactions.items = [...state.transactions.items, ...action.payload.items];
+                state.transactions.nextCursor = action.payload.nextCursor;
+                state.transactions.hasMore = action.payload.hasMore;
+            })
+            .addCase(fetchTransactionsNextPage.rejected, (state, action) => {
+                state.transactions.isLoadingMore = false;
+                state.transactions.loadMoreError = action.error.message || 'Failed to load more';
             })
             // Fetch User Balance
             .addCase(fetchUserBalance.pending, (state) => {
@@ -560,6 +595,7 @@ const groupSlice = createSlice({
 
 export const {
     setActiveGroup,
+    setPendingRefresh,
     socketExpenseAdded,
     socketExpenseUpdated,
     socketExpenseDeleted,
