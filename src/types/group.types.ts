@@ -109,3 +109,9 @@ export interface SettleAllRequest {
     toId: string;
     items: SettleAllItem[];
 }
+
+export interface SettleGuestRequest {
+    guestMemberId: string;
+    currency: string;
+    amount: number;
+}

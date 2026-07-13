@@ -2,7 +2,7 @@ import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/tool
 import type { HistoryTransaction } from '../../types/expense.types';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
 import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, TransactionHistoryMap } from '../../types/expense.types';
-import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest, ExchangeRatesResponse, SettleAllRequest } from '../../types/group.types';
+import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest, ExchangeRatesResponse, SettleAllRequest, SettleGuestRequest } from '../../types/group.types';
 import type { Member } from '../../types/member.types';
 import { api } from '../../lib/api';
 import { API_ENDPOINTS } from '../../constants/api.constants';
@@ -153,6 +153,26 @@ export const settleAllApi = createAsyncThunk(
         return await api.post<{ settlements: GroupSettlement[] }>(API_ENDPOINTS.GROUPS.SETTLE_ALL(groupId), data, {
             headers: { 'Idempotency-Key': idempotencyKey },
         });
+    }
+);
+
+export const settleGuestApi = createAsyncThunk(
+    'groups/settleGuest',
+    async (
+        { groupId, data, idempotencyKey }: { groupId: string; data: SettleGuestRequest; idempotencyKey?: string },
+        { dispatch }
+    ) => {
+        const headers: Record<string, string> = {};
+        if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+        const result = await api.post<{ settlements: GroupSettlement[] }>(
+            API_ENDPOINTS.GROUPS.SETTLE_GUEST(groupId),
+            data,
+            { headers }
+        );
+        dispatch(fetchGroupBalances(groupId));
+        dispatch(fetchUserBalance(groupId));
+        dispatch(fetchTransactions(groupId));
+        return result;
     }
 );
 
