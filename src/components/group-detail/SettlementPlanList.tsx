@@ -62,6 +62,9 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                         const toName = first.to.name || getMemberName(group.toMemberId);
                         const fromAvatar = first.from.avatarUrl || getMemberAvatar(group.fromMemberId);
                         const canSettle = currentMemberId === group.fromMemberId;
+                        const canSettleOnBehalf =
+                            !!isGuestMember?.(group.fromMemberId) &&
+                            currentMemberId === group.toMemberId;
 
                         return (
                             <motion.div
@@ -85,12 +88,12 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                                             </div>
                                         </div>
                                     </div>
-                                    {canSettle && onSettleAll && group.items.length > 1 && (
+                                    {(canSettle || canSettleOnBehalf) && onSettleAll && group.items.length > 1 && (
                                         <button
                                             onClick={() => onSettleAll(group.items)}
                                             className="px-3 py-1.5 bg-primary text-primary-foreground rounded-full text-xs font-semibold hover:opacity-90 transition-all active:scale-95"
                                         >
-                                            Settle all
+                                            {canSettleOnBehalf ? 'Mark all received' : 'Settle all'}
                                         </button>
                                     )}
                                 </div>
@@ -104,6 +107,14 @@ export function SettlementPlanList({ settlements, getMemberName, getMemberAvatar
                                                     className="px-2.5 py-1 bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground rounded-full text-[10px] font-semibold transition-all active:scale-95"
                                                 >
                                                     Record payment
+                                                </button>
+                                            )}
+                                            {canSettleOnBehalf && onSettle && (
+                                                <button
+                                                    onClick={() => onSettle(item)}
+                                                    className="px-2.5 py-1 bg-positive/10 text-positive hover:bg-positive hover:text-white rounded-full text-[10px] font-semibold transition-all active:scale-95"
+                                                >
+                                                    Mark as received
                                                 </button>
                                             )}
                                         </div>
