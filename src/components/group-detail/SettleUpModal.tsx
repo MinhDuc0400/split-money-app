@@ -12,6 +12,8 @@ interface SettleUpModalProps {
     amount: number;
     currency: string;
     isLoading?: boolean;
+    title?: string;
+    confirmLabel?: string;
 }
 
 export function SettleUpModal({
@@ -22,7 +24,9 @@ export function SettleUpModal({
     toMember,
     amount: initialAmount,
     currency,
-    isLoading = false
+    isLoading = false,
+    title = 'Record payment',
+    confirmLabel = 'Record payment',
 }: SettleUpModalProps) {
     const [note, setNote] = useState('');
     const [amount, setAmount] = useState(initialAmount.toString());
@@ -46,7 +50,7 @@ export function SettleUpModal({
                         className="bg-card w-full max-w-md rounded-2xl p-6 relative z-10 border border-border/50 shadow-2xl"
                     >
                         <div className="flex justify-between items-start mb-6">
-                            <h2 className="text-xl font-bold">Record payment</h2>
+                            <h2 className="text-xl font-bold">{title}</h2>
                             <button
                                 onClick={onClose}
                                 className="p-2 hover:bg-secondary rounded-full transition-colors"
@@ -118,7 +122,7 @@ export function SettleUpModal({
                                     ) : (
                                         <>
                                             <Check className="w-4 h-4" />
-                                            Record payment
+                                            {confirmLabel}
                                         </>
                                     )}
                                 </button>

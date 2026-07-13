@@ -18,6 +18,7 @@ interface SettleAllModalProps {
     ratesBase: string;
     isLoading?: boolean;
     error?: string | null;
+    title?: string;
 }
 
 function convert(amount: number, fromCurrency: string, toCurrency: string, rates: Record<string, number>, base: string): number | null {
@@ -41,6 +42,7 @@ export function SettleAllModal({
     ratesBase,
     isLoading = false,
     error = null,
+    title = 'Settle all',
 }: SettleAllModalProps) {
     const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
 
@@ -70,7 +72,7 @@ export function SettleAllModal({
                         className="bg-card w-full max-w-md rounded-2xl p-6 relative z-10 border border-border/50 shadow-2xl"
                     >
                         <div className="flex justify-between items-start mb-6">
-                            <h2 className="text-xl font-bold">Settle all</h2>
+                            <h2 className="text-xl font-bold">{title}</h2>
                             <button onClick={onClose} disabled={isLoading} className="p-2 hover:bg-secondary rounded-full transition-colors">
                                 <X className="w-5 h-5" />
                             </button>
