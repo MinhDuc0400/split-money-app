@@ -56,6 +56,7 @@ export function useGroupEvents(groupId: string) {
             dispatch(socketSettlementAdded(payload));
             dispatch(fetchGroupBalances(groupId));
             dispatch(fetchUserBalance(groupId));
+            dispatch(fetchTransactions(groupId));
         };
 
         const onMemberJoined = (payload: GroupMember) => {
