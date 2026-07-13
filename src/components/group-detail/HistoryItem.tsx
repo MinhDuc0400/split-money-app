@@ -4,6 +4,7 @@ import { Receipt, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { formatAmount } from '../../lib/currency';
 import { type Expense, type HistoryTransaction, type Payer, type Split } from '../../types/expense.types';
 
+
 interface HistoryItemProps {
     expense: Expense | HistoryTransaction;
     currency: string;
@@ -24,26 +25,32 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({
     onDelete,
 }) => {
     const isHistory = isHistoryTransaction(expense);
-    const isRepayment = (isHistory && expense.type === 'SETTLEMENT') ||
+    const isSettlement = isHistory && expense.type === 'SETTLEMENT';
+    const isRepayment = isSettlement ||
         expense.description.toLowerCase().includes('repayment') ||
         expense.description.toLowerCase().includes('settled');
 
-    const payerNames = expense.payers && expense.payers.length > 0
-        ? expense.payers.map((p: Payer | { name: string; memberId: string }) => ('name' in p ? p.name : getMemberName(p.memberId)))
-        : [getMemberName(isHistory ? expense.payerId : '')];
+    // Settlements use from/to directly — expenses use payers/splits
+    const displayPayer = isSettlement && isHistory && expense.from
+        ? expense.from.name
+        : (() => {
+            const payerNames = expense.payers && expense.payers.length > 0
+                ? expense.payers.map((p: Payer | { name: string; memberId: string }) => ('name' in p ? p.name : getMemberName(p.memberId)))
+                : [getMemberName(isHistory ? (expense.payerId ?? '') : '')];
+            return payerNames.length > 2
+                ? `${payerNames.slice(0, 2).join(', ')} and ${payerNames.length - 2} more`
+                : payerNames.join(' & ');
+        })();
 
-    const displayPayer = payerNames.length > 1
-        ? (payerNames.length > 2 ? `${payerNames.slice(0, 2).join(', ')} and ${payerNames.length - 2} more` : payerNames.join(' & '))
-        : payerNames[0];
-
-    // For regular expenses, we might want to show who it was for
-    const payerIds = new Set(expense.payers?.map((p: Payer | { memberId: string }) => p.memberId) || (isHistory ? [expense.payerId] : []));
-
-    // Safety check for splits (HistoryTransaction might not have them)
-    const splits = (!isHistory && expense.splits) || [];
-    const receivers = (splits as Split[])
-        .filter((s: Split) => !payerIds.has(s.memberId) && (s.amount ?? 0) > 0)
-        .map((s: Split) => getMemberName(s.memberId));
+    const receivers: string[] = isSettlement && isHistory && expense.to
+        ? [expense.to.name]
+        : (() => {
+            const payerIds = new Set(expense.payers?.map((p: Payer | { memberId: string }) => p.memberId) || (isHistory ? [expense.payerId] : []));
+            const splits = (!isHistory && expense.splits) || [];
+            return (splits as Split[])
+                .filter((s: Split) => !payerIds.has(s.memberId) && (s.amount ?? 0) > 0)
+                .map((s: Split) => getMemberName(s.memberId));
+        })();
 
     // Fallback date handling
     const displayDate = !isHistory

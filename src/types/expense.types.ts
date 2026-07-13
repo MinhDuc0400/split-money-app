@@ -51,6 +51,12 @@ export interface Transaction {
     amount: number;
     currency: string; // Currency code for this transaction
 }
+export interface HistoryMember {
+    memberId: string;
+    name: string;
+    avatarUrl?: string | null;
+}
+
 export interface HistoryTransaction {
     id: string;
     type: 'EXPENSE' | 'SETTLEMENT';
@@ -58,14 +64,18 @@ export interface HistoryTransaction {
     amount: number;
     currency: string;
     date: string;
-    payerId: string;
-    payers: {
+    // EXPENSE fields
+    payerId?: string;
+    payers?: {
         memberId: string;
         amount: number;
         name: string;
     }[];
     splitType?: SplitType;
     splits?: Split[];
+    // SETTLEMENT fields
+    from?: HistoryMember;
+    to?: HistoryMember;
 }
 
 export type TransactionHistoryMap = Record<string, HistoryTransaction[]>;
