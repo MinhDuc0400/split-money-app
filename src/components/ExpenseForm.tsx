@@ -353,7 +353,7 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
                     <SplitTypeSelector splitType={splitType} setSplitType={setSplitType} />
 
                     {splitType === SplitType.EVEN && (
-                        <SplitEven members={members} included={included} setIncluded={setIncluded} equalEach={equalEach} />
+                        <SplitEven members={members} included={included} setIncluded={setIncluded} equalEach={equalEach} currency={currency} />
                     )}
                     {splitType === SplitType.EXACT && (
                         <SplitExact members={members} manualAmounts={manualAmounts} setManualAmounts={setManualAmounts} amount={amount} currency={currency} />
