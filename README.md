@@ -1,81 +1,102 @@
-# React + TypeScript + Vite
+# Split Money — Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A real-time expense splitting app built with React, TypeScript, and Redux Toolkit. Split costs across groups, track balances, and settle debts — with live updates pushed to every member via WebSocket.
 
-Currently, two official plugins are available:
+**Live:** [split-money-app-rho.vercel.app](https://split-money-app-rho.vercel.app)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Environment Setup
+## Tech Stack
 
-The application uses environment variables for configuration.
+| Layer | Technology |
+|---|---|
+| Framework | React 18 + TypeScript |
+| Build | Vite |
+| State | Redux Toolkit |
+| Routing | React Router v7 |
+| Real-time | Socket.IO client |
+| Styling | CSS Modules |
 
-- `VITE_API_URL`: The base URL for the backend API.
-  - Development: `http://localhost:3000` (set in `.env`)
-  - Production: TBD (set in `.env.production`)
+---
 
-## React Compiler
+## Features
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **Expense management** — create, edit, and delete shared expenses with flexible split types (equal, exact, percentage)
+- **Real-time sync** — all group members see changes instantly via Socket.IO; no polling
+- **Debt simplification** — server-computed optimal settlement graph (minimises transaction count)
+- **Multi-currency** — per-group currency with live exchange rate support
+- **Guest members** — add people who aren't registered; creditors can mark their cash as received
+- **Paginated history** — cursor-based infinite scroll loads 20 transactions at a time
 
-## Expanding the ESLint configuration
+---
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Getting Started
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### Prerequisites
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+- Node.js 20+
+- Backend API running (see [`money-split-backend`](../money-split-backend))
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Install
+
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Environment Variables
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Create a `.env` file:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_URL=http://localhost:3000
 ```
+
+For production, create `.env.production`:
+
+```env
+VITE_API_URL=https://your-railway-backend.up.railway.app
+```
+
+### Run
+
+```bash
+# Development
+npm run dev
+
+# Production build
+npm run build
+npm run preview
+```
+
+---
+
+## Project Structure
+
+```
+src/
+├── components/          # UI components (GroupDetail, HistoryList, …)
+├── constants/           # API endpoint builders, app-wide constants
+├── context/             # GroupContext — provides group state to the tree
+├── hooks/               # useGroupEvents (Socket.IO), useAuth, …
+├── store/
+│   └── slices/          # Redux slices: groupSlice, authSlice, …
+├── types/               # Shared TypeScript interfaces
+└── main.tsx
+```
+
+---
+
+## Deployment
+
+Deployed to **Vercel** with SPA routing via `vercel.json`:
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
+```
+
+---
+
+## Author
+
+**Duc Nguyen Minh** — Frontend Developer  
+[linkedin.com/in/ducnguyenminh0400](https://www.linkedin.com/in/ducnguyenminh0400/) · ducnm.job@gmail.com
