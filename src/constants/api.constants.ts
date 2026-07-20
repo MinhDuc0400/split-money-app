@@ -4,6 +4,7 @@ export const API_PUBLIC_URL = import.meta.env.VITE_API_PUBLIC_URL as string;
 export const API_ENDPOINTS = {
     AUTH: {
         GOOGLE: `${API_PUBLIC_URL}/auth/google`,
+        APPLE: `${API_PUBLIC_URL}/auth/apple`,
         LOGOUT: `${API_PUBLIC_URL}/auth/logout`,
         ME: `${API_PUBLIC_URL}/auth/me`,
     },
