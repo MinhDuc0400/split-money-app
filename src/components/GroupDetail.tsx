@@ -16,7 +16,7 @@ import { AddExpense } from './AddExpense';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { settleAllApi, fetchExchangeRates, settleGuestApi, fetchTransactionsNextPage } from '../store/slices/groupSlice';
+import { settleAllApi, settleGuestApi, fetchTransactionsNextPage } from '../store/slices/groupSlice';
 import { pendingDeleteAdded } from '../store/slices/pendingDeletesSlice';
 import { type GroupSettlement } from '../types/group.types';
 import { calculateSettlements, isBalanceSettled } from '../lib/accounting';
@@ -57,18 +57,8 @@ export function GroupDetail() {
     const [settleAllError, setSettleAllError] = useState<string | null>(null);
     const [displayCurrency, setDisplayCurrency] = useState<Currency>('USD');
     const dispatch = useAppDispatch();
-    const exchangeRates = useAppSelector((state) => state.groups.exchangeRates);
     const pendingDeletes = useAppSelector(state => state.pendingDeletes.items);
     const [isAddingExpense, setIsAddingExpense] = useState(false);
-
-    // Always fetch with base=USD - the scheduled backend job only ever caches
-    // rates with USD as the base (see Task 2), so this must not depend on
-    // displayCurrency. SettleAllModal's convert() computes arbitrary
-    // cross-rates (rate(A->B) = rates[B]/rates[A]) from this single table,
-    // regardless of which currency the user picks to view the total in.
-    useEffect(() => {
-        dispatch(fetchExchangeRates('USD'));
-    }, [dispatch]);
 
     // Fetch group details on mount or ID change
     useEffect(() => {
@@ -498,8 +488,6 @@ export function GroupDetail() {
                     }}
                     displayCurrency={displayCurrency}
                     onDisplayCurrencyChange={setDisplayCurrency}
-                    rates={exchangeRates?.rates ?? {}}
-                    ratesBase={exchangeRates?.base ?? 'USD'}
                     isLoading={isSettlingAll}
                     error={settleAllError}
                     title={settlingAllItems[0] && isGuestMember(settlingAllItems[0].from.memberId) ? 'Mark all as received' : undefined}

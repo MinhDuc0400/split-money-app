@@ -1,7 +1,7 @@
 import { Check, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState, useMemo } from 'react';
-import { formatAmount, CURRENCIES, type Currency } from '../../lib/currency';
+import { useState, useMemo, useEffect } from 'react';
+import { formatAmount, formatCurrencyInput, parseCurrencyInput, getCurrencySymbol, CURRENCIES, type Currency } from '../../lib/currency';
 import type { GroupSettlement } from '../../types/group.types';
 import { Avatar } from '../Avatar';
 
@@ -14,19 +14,17 @@ interface SettleAllModalProps {
     toMember: { name: string; avatar?: string };
     displayCurrency: Currency;
     onDisplayCurrencyChange: (currency: Currency) => void;
-    rates: Record<string, number>;
-    ratesBase: string;
     isLoading?: boolean;
     error?: string | null;
     title?: string;
 }
 
-function convert(amount: number, fromCurrency: string, toCurrency: string, rates: Record<string, number>, base: string): number | null {
+/** manualRates[fromCurrency] = how many units of `toCurrency` one unit of `fromCurrency` is worth, as a formatted (comma-separated) string. */
+function convert(amount: number, fromCurrency: string, toCurrency: string, manualRates: Record<string, string>): number | null {
     if (fromCurrency === toCurrency) return amount;
-    const fromRate = fromCurrency === base ? 1 : rates[fromCurrency];
-    const toRate = toCurrency === base ? 1 : rates[toCurrency];
-    if (!fromRate || !toRate) return null;
-    return (amount / fromRate) * toRate;
+    const rate = parseCurrencyInput(manualRates[fromCurrency] ?? '');
+    if (!rate) return null;
+    return amount * rate;
 }
 
 export function SettleAllModal({
@@ -38,19 +36,29 @@ export function SettleAllModal({
     toMember,
     displayCurrency,
     onDisplayCurrencyChange,
-    rates,
-    ratesBase,
     isLoading = false,
     error = null,
     title = 'Settle all',
 }: SettleAllModalProps) {
-    const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
+    const [manualRates, setManualRates] = useState<Record<string, string>>({});
+
+    // Old manual rates were entered against the previous display currency and
+    // no longer mean the same thing once the target changes — clear them
+    // rather than silently reusing a rate against the wrong currency.
+    useEffect(() => {
+        setManualRates({});
+    }, [displayCurrency]);
+
+    const currenciesNeedingRate = useMemo(
+        () => [...new Set(items.map((i) => i.currency))].filter((c) => c !== displayCurrency),
+        [items, displayCurrency]
+    );
 
     const { total, hasUnconverted } = useMemo(() => {
         let sum = 0;
         let unconverted = false;
         for (const item of items) {
-            const converted = convert(item.amount, item.currency, displayCurrency, rates, ratesBase);
+            const converted = convert(item.amount, item.currency, displayCurrency, manualRates);
             if (converted === null) {
                 unconverted = true;
             } else {
@@ -58,7 +66,12 @@ export function SettleAllModal({
             }
         }
         return { total: sum, hasUnconverted: unconverted };
-    }, [items, displayCurrency, rates, ratesBase]);
+    }, [items, displayCurrency, manualRates]);
+
+    function handleRateChange(currency: string, value: string) {
+        const formatted = formatCurrencyInput(value);
+        setManualRates((prev) => ({ ...prev, [currency]: formatted }));
+    }
 
     return (
         <AnimatePresence>
@@ -101,41 +114,52 @@ export function SettleAllModal({
                                 ))}
                             </div>
 
-                            <div className="border-t border-border/50 pt-3">
-                                <div className="flex items-center justify-between">
-                                    <span className="text-xs text-muted-foreground">
-                                        For reference only{hasUnconverted ? ' (some currencies not converted)' : ''}
-                                    </span>
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowCurrencyPicker((v) => !v)}
-                                        className="text-xs text-primary underline"
-                                    >
-                                        shown in {displayCurrency}
-                                    </button>
-                                </div>
-                                <p className="text-sm font-medium text-muted-foreground tabular-nums mt-1">
-                                    ≈ {formatAmount(total, displayCurrency)} total
-                                </p>
-                                <a
-                                    href="https://www.exchangerate-api.com"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-[10px] text-muted-foreground/70 underline block mt-0.5"
-                                >
-                                    Rates by ExchangeRate-API
-                                </a>
-                                {showCurrencyPicker && (
+                            <div className="space-y-3 border-t border-border/50 pt-3">
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-muted-foreground whitespace-nowrap">Reference total in</span>
                                     <select
                                         value={displayCurrency}
                                         onChange={(e) => onDisplayCurrencyChange(e.target.value as Currency)}
-                                        className="mt-2 w-full bg-secondary/50 border border-border/50 rounded-lg px-2 py-1 text-xs"
+                                        className="w-24 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1 text-xs tabular-nums"
                                     >
                                         {CURRENCIES.map((c) => (
                                             <option key={c} value={c}>{c}</option>
                                         ))}
                                     </select>
+                                </div>
+
+                                {currenciesNeedingRate.length > 0 && (
+                                    <div className="space-y-2">
+                                        <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Conversion rates</p>
+                                        {currenciesNeedingRate.map((c) => (
+                                            <div key={c} className="flex items-center gap-2 text-sm">
+                                                <span className="text-muted-foreground whitespace-nowrap">1 {c} =</span>
+                                                <div className="relative">
+                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">
+                                                        {getCurrencySymbol(displayCurrency)}
+                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        inputMode="decimal"
+                                                        value={manualRates[c] ?? ''}
+                                                        onChange={(e) => handleRateChange(c, e.target.value)}
+                                                        placeholder="0.00"
+                                                        className="w-24 bg-secondary/50 border border-border/50 rounded-lg pl-5 pr-2 py-1 text-xs tabular-nums"
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 )}
+
+                                <div>
+                                    <p className="text-xs text-muted-foreground">
+                                        For reference only{hasUnconverted ? ' (some currencies not converted)' : ''}
+                                    </p>
+                                    <p className="text-sm font-medium text-muted-foreground tabular-nums mt-1">
+                                        ≈ {formatAmount(total, displayCurrency)} total
+                                    </p>
+                                </div>
                             </div>
 
                             {error && (
