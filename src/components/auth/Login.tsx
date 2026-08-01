@@ -7,10 +7,6 @@ export const Login: React.FC = () => {
         window.location.href = API_ENDPOINTS.AUTH.GOOGLE;
     };
 
-    const handleAppleLogin = () => {
-        window.location.href = API_ENDPOINTS.AUTH.APPLE;
-    };
-
     return (
         <div className="flex flex-col items-center justify-center min-h-[60vh] p-4 text-center">
             <div className="bg-card p-8 rounded-2xl shadow-xl border border-border max-w-md w-full">
