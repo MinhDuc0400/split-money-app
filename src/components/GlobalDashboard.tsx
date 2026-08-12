@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
-import { Users, ChevronRight, Plus } from 'lucide-react';
+import { Users, ChevronRight, ChevronDown, ChevronUp, Plus } from 'lucide-react';
 import { WelcomeView } from './dashboard/WelcomeView';
 import { AddExpense } from './AddExpense';
 import { Skeleton } from './ui/Skeleton';
@@ -10,11 +10,52 @@ import { formatAmount } from '../lib/currency';
 import { useAppSelector } from '../store/hooks';
 import { cn } from '../lib/utils';
 
+const MAX_CURRENCIES_SHOWN = 3;
+
+// "A" | "A and B" | "A, B and C"
+function naturalJoin(parts: string[]): string {
+    if (parts.length <= 1) return parts.join('');
+    return `${parts.slice(0, -1).join(', ')} and ${parts[parts.length - 1]}`;
+}
+
+interface CurrencyBalanceLineProps {
+    label: string;
+    balances: Array<{ currency: string; net: number }>;
+    colorClass: string;
+    expanded: boolean;
+    onToggle: () => void;
+}
+
+const CurrencyBalanceLine: React.FC<CurrencyBalanceLineProps> = ({ label, balances, colorClass, expanded, onToggle }) => {
+    if (balances.length === 0) return null;
+
+    const overflowCount = balances.length - MAX_CURRENCIES_SHOWN;
+    const shown = expanded || overflowCount <= 0 ? balances : balances.slice(0, MAX_CURRENCIES_SHOWN);
+    const amounts = shown.map(b => formatAmount(Math.abs(b.net), b.currency));
+
+    return (
+        <p className={cn('text-xl font-bold tabular-nums flex flex-wrap items-center gap-x-1.5', colorClass)}>
+            <span>{label} {naturalJoin(amounts)}</span>
+            {overflowCount > 0 && (
+                <button
+                    type="button"
+                    onClick={onToggle}
+                    className="inline-flex items-center gap-0.5 rounded-full bg-secondary px-2 py-0.5 text-sm font-semibold text-muted-foreground hover:bg-secondary/70 hover:text-foreground active:scale-95 transition-colors"
+                >
+                    {expanded ? 'show less' : `+${overflowCount} more`}
+                    {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+            )}
+        </p>
+    );
+};
+
 export const GlobalDashboard: React.FC = () => {
     const navigate = useNavigate();
     const { groups, balanceSummary, isLoading, switchGroup } = useGroup();
     const membersByGroupId = useAppSelector(state => state.groups.membersByGroupId);
     const [isAddingExpense, setIsAddingExpense] = useState(false);
+    const [expanded, setExpanded] = useState({ owed: false, owing: false });
 
     if (isLoading && groups.length === 0) {
         return (
@@ -46,6 +87,8 @@ export const GlobalDashboard: React.FC = () => {
             .filter(b => !isBalanceSettled(b.net))
             .toSorted((a, b) => Math.abs(b.net) - Math.abs(a.net))
         : [];
+    const owed = currencyBalances.filter(b => b.net > 0);
+    const owing = currencyBalances.filter(b => b.net < 0);
 
     return (
         <div className="space-y-10 pb-12">
@@ -58,11 +101,20 @@ export const GlobalDashboard: React.FC = () => {
                     </>
                 ) : (
                     <div className="space-y-1">
-                        {currencyBalances.map(b => (
-                            <p key={b.currency} className={cn('text-xl font-bold tabular-nums', b.net > 0 ? 'text-positive' : 'text-negative')}>
-                                {b.net > 0 ? "You're owed" : 'You owe'} {formatAmount(Math.abs(b.net), b.currency)}
-                            </p>
-                        ))}
+                        <CurrencyBalanceLine
+                            label="You're owed"
+                            balances={owed}
+                            colorClass="text-positive"
+                            expanded={expanded.owed}
+                            onToggle={() => { setExpanded(e => ({ ...e, owed: !e.owed })); }}
+                        />
+                        <CurrencyBalanceLine
+                            label="You owe"
+                            balances={owing}
+                            colorClass="text-negative"
+                            expanded={expanded.owing}
+                            onToggle={() => { setExpanded(e => ({ ...e, owing: !e.owing })); }}
+                        />
                     </div>
                 )}
 
