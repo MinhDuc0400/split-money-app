@@ -8,6 +8,7 @@ interface SpendingByCategoryCardProps {
     data: CategorySpending[] | null;
     currency: string;
     isLoading: boolean;
+    error?: string | null;
 }
 
 interface ChartDatum {
@@ -15,7 +16,7 @@ interface ChartDatum {
     amount: number;
 }
 
-export function SpendingByCategoryCard({ data, currency, isLoading }: SpendingByCategoryCardProps) {
+export function SpendingByCategoryCard({ data, currency, isLoading, error }: SpendingByCategoryCardProps) {
     const chartData: ChartDatum[] = CATEGORY_ORDER.map((category) => {
         const entry = data?.find((d) => d.category === category);
         return entry && entry.totalCents > 0 ? { category, amount: entry.totalCents / 100 } : null;
@@ -25,6 +26,8 @@ export function SpendingByCategoryCard({ data, currency, isLoading }: SpendingBy
         <SummaryCard title="Spending by Category">
             {isLoading ? (
                 <div className="h-48 rounded-xl bg-muted animate-pulse" />
+            ) : error ? (
+                <p className="text-sm text-destructive py-8 text-center">Couldn't load spending breakdown</p>
             ) : chartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">No expenses yet this period</p>
             ) : (

@@ -47,12 +47,15 @@ export function Dashboard() {
     const dispatch = useAppDispatch();
     const categorySpending = useAppSelector(state => state.groups.categorySpending);
     const categorySpendingLoading = useAppSelector(state => state.groups.categorySpendingLoading);
+    const categorySpendingError = useAppSelector(state => state.groups.categorySpendingError);
 
     useEffect(() => {
         if (id) {
-            void dispatch(fetchSpendingByCategory({ groupId: id }));
+            void dispatch(fetchSpendingByCategory({ groupId: id, currency }));
         }
-    }, [id, dispatch]);
+        // currency is included so switching the group's currency triggers a
+        // refetch instead of relabeling stale totals with the new symbol.
+    }, [id, currency, dispatch]);
 
     const groupExists = groups.some(g => g.id === id);
 
@@ -115,7 +118,7 @@ export function Dashboard() {
             </div>
 
             {/* Spending by Category */}
-            <SpendingByCategoryCard data={categorySpending} currency={currency} isLoading={categorySpendingLoading} />
+            <SpendingByCategoryCard data={categorySpending} currency={currency} isLoading={categorySpendingLoading} error={categorySpendingError} />
         </div>
     );
 }

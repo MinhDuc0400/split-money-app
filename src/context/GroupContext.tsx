@@ -8,7 +8,7 @@ import { calculateBalances, calculateSettlements } from '../lib/accounting';
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactionsFirstPage, fetchUserBalance, fetchSettlements, fetchGroupBalances, createSettlement, fetchBalanceSummary, leaveGroupApi, addGuest, renameGuest, removeGuest
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactionsFirstPage, fetchUserBalance, fetchSettlements, fetchGroupBalances, fetchSpendingByCategory, createSettlement, fetchBalanceSummary, leaveGroupApi, addGuest, renameGuest, removeGuest
 } from '../store/slices/groupSlice';
 import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
@@ -196,7 +196,8 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
             dispatch(fetchTransactionsFirstPage(id)).unwrap(),
             dispatch(fetchUserBalance(id)).unwrap(),
             dispatch(fetchSettlements(id)).unwrap(),
-            dispatch(fetchGroupBalances(id)).unwrap()
+            dispatch(fetchGroupBalances(id)).unwrap(),
+            dispatch(fetchSpendingByCategory({ groupId: id })).unwrap()
         ]);
     }, [dispatch]);
 

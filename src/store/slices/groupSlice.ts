@@ -33,6 +33,7 @@ interface GroupState {
     exchangeRates: ExchangeRatesResponse | null;
     categorySpending: CategorySpending[] | null;
     categorySpendingLoading: boolean;
+    categorySpendingError: string | null;
     error: string | null;
 }
 
@@ -57,6 +58,7 @@ const initialState: GroupState = {
     exchangeRates: null,
     categorySpending: null,
     categorySpendingLoading: false,
+    categorySpendingError: null,
     error: null,
 };
 
@@ -516,14 +518,17 @@ const groupSlice = createSlice({
             // Fetch Spending By Category
             .addCase(fetchSpendingByCategory.pending, (state) => {
                 state.categorySpendingLoading = true;
+                state.categorySpendingError = null;
             })
             .addCase(fetchSpendingByCategory.fulfilled, (state, action) => {
                 state.categorySpendingLoading = false;
                 state.categorySpending = action.payload;
+                state.categorySpendingError = null;
             })
-            .addCase(fetchSpendingByCategory.rejected, (state) => {
+            .addCase(fetchSpendingByCategory.rejected, (state, action) => {
                 state.categorySpendingLoading = false;
                 state.categorySpending = null;
+                state.categorySpendingError = action.error.message || 'Failed to fetch spending by category';
             })
             // Fetch Balance Summary (cross-group totals)
             .addCase(fetchBalanceSummary.pending, (state) => {

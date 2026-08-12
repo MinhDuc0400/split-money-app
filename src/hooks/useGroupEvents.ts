@@ -5,6 +5,7 @@ import {
     fetchTransactionsFirstPage,
     fetchGroupBalances,
     fetchUserBalance,
+    fetchSpendingByCategory,
     setPendingRefresh,
     socketExpenseAdded,
     socketExpenseUpdated,
@@ -41,6 +42,10 @@ export function useGroupEvents(groupId: string) {
             refreshTransactions();
             dispatch(fetchGroupBalances(groupId));
             dispatch(fetchUserBalance(groupId));
+            // Currency is intentionally omitted: the thunk falls back to the
+            // group's current currency server-side, so this stays correct
+            // even if this closure's view of currency is stale.
+            dispatch(fetchSpendingByCategory({ groupId }));
         };
 
         const onExpenseCreated = (payload: Expense & { groupId: string }) => {
