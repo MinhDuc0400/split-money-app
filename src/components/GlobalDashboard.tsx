@@ -42,40 +42,29 @@ export const GlobalDashboard: React.FC = () => {
     // Per-currency nets from the server-side summary (accounts for settlements)
     const currencyBalances = balanceSummary
         ? Object.entries(balanceSummary)
-            .map(([currency, v]) => ({ currency, net: v.totalBalance, owed: v.totalOwed, owing: v.totalOwing }))
-            .filter(b => !isBalanceSettled(b.net) || !isBalanceSettled(b.owed) || !isBalanceSettled(b.owing))
+            .map(([currency, v]) => ({ currency, net: v.totalBalance }))
+            .filter(b => !isBalanceSettled(b.net))
             .toSorted((a, b) => Math.abs(b.net) - Math.abs(a.net))
         : [];
-    const primary = currencyBalances[0];
-    const others = currencyBalances.slice(1);
 
     return (
         <div className="space-y-10 pb-12">
             {/* Hero balance */}
             <section>
-                {primary && !isBalanceSettled(primary.net) ? (
-                    <>
-                        <p className="text-sm text-muted-foreground">{primary.net > 0 ? "You're owed" : 'You owe'}</p>
-                        <p className={cn('text-5xl font-bold tabular-nums mt-1', primary.net > 0 ? 'text-positive' : 'text-negative')}>
-                            {formatAmount(Math.abs(primary.net), primary.currency)}
-                        </p>
-                    </>
-                ) : (
+                {currencyBalances.length === 0 ? (
                     <>
                         <p className="text-sm text-muted-foreground">Your balance</p>
-                        <p className="text-5xl font-bold mt-1">All settled</p>
+                        <p className="text-2xl font-bold mt-1">All settled</p>
                     </>
+                ) : (
+                    <div className="space-y-1">
+                        {currencyBalances.map(b => (
+                            <p key={b.currency} className={cn('text-xl font-bold tabular-nums', b.net > 0 ? 'text-positive' : 'text-negative')}>
+                                {b.net > 0 ? "You're owed" : 'You owe'} {formatAmount(Math.abs(b.net), b.currency)}
+                            </p>
+                        ))}
+                    </div>
                 )}
-                {primary && (
-                    <p className="text-sm text-muted-foreground mt-2 tabular-nums">
-                        {formatAmount(primary.owed, primary.currency)} owed to you · {formatAmount(primary.owing, primary.currency)} you owe
-                    </p>
-                )}
-                {others.map(b => (
-                    <p key={b.currency} className={cn('text-sm mt-1 tabular-nums', b.net > 0 ? 'text-positive' : b.net < 0 ? 'text-negative' : 'text-muted-foreground')}>
-                        {isBalanceSettled(b.net) ? `Settled in ${b.currency}` : `${b.net > 0 ? "you're owed" : 'you owe'} ${formatAmount(Math.abs(b.net), b.currency)}`}
-                    </p>
-                ))}
 
                 <button
                     onClick={() => { setIsAddingExpense(true); }}

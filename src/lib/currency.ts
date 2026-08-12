@@ -42,6 +42,19 @@ export function getCurrencySymbol(currency: string): string {
     return CURRENCY_SYMBOLS[currency as Currency] || '$';
 }
 
+// Currencies whose symbol is shared with at least one other currency (e.g. JPY
+// and CNY both use '¥'), derived from the symbol table itself so it stays
+// correct if more currencies are added later.
+const SYMBOL_COUNTS = CURRENCIES.reduce<Record<string, number>>((acc, c) => {
+    const sym = CURRENCY_SYMBOLS[c];
+    acc[sym] = (acc[sym] ?? 0) + 1;
+    return acc;
+}, {});
+
+const AMBIGUOUS_CURRENCIES = new Set(
+    CURRENCIES.filter(c => SYMBOL_COUNTS[CURRENCY_SYMBOLS[c]] > 1)
+);
+
 /**
  * Format a number with thousands separators
  * @param value - The number or string to format
@@ -127,6 +140,10 @@ export function formatAmount(amount: unknown, currency: string): string {
 
     if (currency === 'VND' || currency === 'THB') {
         return `${formatted}${symbol}`;
+    }
+
+    if (AMBIGUOUS_CURRENCIES.has(currency as Currency)) {
+        return `${currency} ${symbol}${formatted}`;
     }
 
     return `${symbol}${formatted}`;
