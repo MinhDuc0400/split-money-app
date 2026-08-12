@@ -2,6 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Receipt, ArrowRight, Pencil, Trash2 } from 'lucide-react';
 import { formatAmount } from '../../lib/currency';
+import { CATEGORY_ICONS, CATEGORY_LABELS } from '../../lib/expenseCategories';
 import { type Expense, type HistoryTransaction, type Payer, type Split } from '../../types/expense.types';
 
 
@@ -70,7 +71,20 @@ export const HistoryItem: React.FC<HistoryItemProps> = ({
                 </div>
 
                 <div>
-                    <p className="font-semibold text-sm">{expense.description}</p>
+                    <p className="font-semibold text-sm flex items-center gap-1.5">
+                        {expense.description}
+                        {!isSettlement && expense.category && (
+                            <span
+                                title={CATEGORY_LABELS[expense.category]}
+                                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-secondary text-muted-foreground shrink-0"
+                            >
+                                {(() => {
+                                    const CategoryIcon = CATEGORY_ICONS[expense.category];
+                                    return <CategoryIcon className="w-2.5 h-2.5" />;
+                                })()}
+                            </span>
+                        )}
+                    </p>
                     <p className="text-xs text-muted-foreground mt-0.5">
                         <span className="font-medium text-foreground">{displayPayer}</span>
                         {isRepayment ? ' paid ' : ' paid for '}
