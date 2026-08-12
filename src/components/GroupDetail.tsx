@@ -316,6 +316,7 @@ export function GroupDetail() {
             payerId: payers.length > 0 ? (payers[0] as any).memberId : (isHistory ? (expenseToEdit as any).payerId : undefined),
             payers: payers as any[],
             splitType,
+            category: expenseToEdit.category,
             splits,
             manualAmounts: splitType === SplitType.EXACT
                 ? splits.reduce<Record<string, string>>((acc, s) => ({ ...acc, [s.memberId]: (s.amount ?? 0).toString() }), {})

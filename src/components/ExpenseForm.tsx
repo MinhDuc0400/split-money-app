@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useGroup } from '../context/GroupContext';
 import { calculateSplits, isBalanceSettled } from '../lib/accounting';
-import { SplitType, type Split, type Payer, type CreateExpenseRequest } from '../types/expense.types';
+import { SplitType, ExpenseCategory, type Split, type Payer, type CreateExpenseRequest } from '../types/expense.types';
+import { CATEGORY_ORDER, CATEGORY_LABELS, CATEGORY_ICONS } from '../lib/expenseCategories';
 import { useAppSelector } from '../store/hooks';
 import { AmountInput } from './expense-form/AmountInput';
 import { PayerSelector } from './expense-form/PayerSelector';
@@ -25,6 +26,7 @@ interface ExpenseFormProps {
         payerId?: string;
         payers?: Payer[];
         splitType: SplitType;
+        category?: ExpenseCategory;
         splits: Split[];
         manualAmounts: Record<string, string>;
     };
@@ -75,6 +77,7 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
     });
 
     const [splitType, setSplitType] = useState<SplitType>(initialData?.splitType || SplitType.EVEN);
+    const [category, setCategory] = useState<ExpenseCategory>(initialData?.category || ExpenseCategory.OTHER);
     const [manualAmounts, setManualAmounts] = useState<Record<string, string>>(initialData?.manualAmounts || {});
     const [percentages, setPercentages] = useState<Record<string, string>>(() => {
         if (initialData?.splitType === SplitType.PERCENTAGE && Array.isArray(initialData.splits)) {
@@ -263,6 +266,7 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
             currency,
             payers: isMultiPayer ? payers : [{ memberId: payers[0].memberId, amount: totalAmount }],
             splitType,
+            category,
             splits: result.splits,
             date: new Date().toISOString()
         });
@@ -317,6 +321,31 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
                                 </option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-sm font-medium text-muted-foreground">Category (optional)</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            {CATEGORY_ORDER.map((cat) => {
+                                const Icon = CATEGORY_ICONS[cat];
+                                const isSelected = category === cat;
+                                return (
+                                    <button
+                                        key={cat}
+                                        type="button"
+                                        onClick={() => { setCategory(cat); }}
+                                        className={`flex flex-col items-center gap-1 py-3 rounded-xl border text-xs font-medium transition-all ${
+                                            isSelected
+                                                ? 'border-primary bg-primary/10 text-primary'
+                                                : 'border-border text-muted-foreground hover:bg-secondary/50'
+                                        }`}
+                                    >
+                                        <Icon className="w-4 h-4" />
+                                        {CATEGORY_LABELS[cat]}
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </div>
                 </div>
             )}
