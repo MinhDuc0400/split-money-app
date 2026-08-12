@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
-import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, HistoryTransaction, PaginatedHistoryResponse } from '../../types/expense.types';
+import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, HistoryTransaction, PaginatedHistoryResponse, CategorySpending } from '../../types/expense.types';
 import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest, ExchangeRatesResponse, SettleAllRequest, SettleGuestRequest } from '../../types/group.types';
 import type { Member } from '../../types/member.types';
 import { api } from '../../lib/api';
@@ -31,6 +31,8 @@ interface GroupState {
     membersByGroupId: Record<string, Member[]>;
     balanceSummary: Record<string, BalanceSummaryByCurrency> | null;
     exchangeRates: ExchangeRatesResponse | null;
+    categorySpending: CategorySpending[] | null;
+    categorySpendingLoading: boolean;
     error: string | null;
 }
 
@@ -53,6 +55,8 @@ const initialState: GroupState = {
     membersByGroupId: {},
     balanceSummary: null,
     exchangeRates: null,
+    categorySpending: null,
+    categorySpendingLoading: false,
     error: null,
 };
 
@@ -99,6 +103,13 @@ export const fetchSettlements = createAsyncThunk('groups/fetchSettlements', asyn
 export const fetchGroupBalances = createAsyncThunk('groups/fetchBalances', async (groupId: string) => {
     return await api.get<GroupBalancesResponse>(API_ENDPOINTS.GROUPS.BALANCES(groupId));
 });
+
+export const fetchSpendingByCategory = createAsyncThunk(
+    'groups/fetchSpendingByCategory',
+    async ({ groupId, currency }: { groupId: string; currency?: string }) => {
+        return await api.get<CategorySpending[]>(API_ENDPOINTS.GROUPS.EXPENSES_BY_CATEGORY(groupId, currency));
+    }
+);
 
 export const createGroup = createAsyncThunk('groups/create', async (data: { name: string; currency: string }) => {
     return await api.post<GroupMeta>(API_ENDPOINTS.GROUPS.BASE, data);
@@ -501,6 +512,18 @@ const groupSlice = createSlice({
             .addCase(fetchGroupBalances.rejected, (state, action) => {
                 state.isLoading = false;
                 state.error = action.error.message || 'Failed to fetch group balances';
+            })
+            // Fetch Spending By Category
+            .addCase(fetchSpendingByCategory.pending, (state) => {
+                state.categorySpendingLoading = true;
+            })
+            .addCase(fetchSpendingByCategory.fulfilled, (state, action) => {
+                state.categorySpendingLoading = false;
+                state.categorySpending = action.payload;
+            })
+            .addCase(fetchSpendingByCategory.rejected, (state) => {
+                state.categorySpendingLoading = false;
+                state.categorySpending = null;
             })
             // Fetch Balance Summary (cross-group totals)
             .addCase(fetchBalanceSummary.pending, (state) => {
