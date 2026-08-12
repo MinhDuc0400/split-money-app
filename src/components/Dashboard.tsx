@@ -5,11 +5,13 @@ import { TotalSpentCard } from './dashboard/TotalSpentCard';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { GroupDetailsCard } from './dashboard/GroupDetailsCard';
 import { QuickStatsCard } from './dashboard/QuickStatsCard';
+import { SpendingByCategoryCard } from './dashboard/SpendingByCategoryCard';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { WelcomeView } from './dashboard/WelcomeView';
 import { useEffect, useMemo } from 'react';
 import { isBalanceSettled } from '../lib/accounting';
-import { useAppSelector } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { fetchSpendingByCategory } from '../store/slices/groupSlice';
 
 export function Dashboard() {
     const navigate = useNavigate();
@@ -41,6 +43,16 @@ export function Dashboard() {
             switchGroup(id);
         }
     }, [id, activeGroupId, switchGroup]);
+
+    const dispatch = useAppDispatch();
+    const categorySpending = useAppSelector(state => state.groups.categorySpending);
+    const categorySpendingLoading = useAppSelector(state => state.groups.categorySpendingLoading);
+
+    useEffect(() => {
+        if (id) {
+            void dispatch(fetchSpendingByCategory({ groupId: id }));
+        }
+    }, [id, dispatch]);
 
     const groupExists = groups.some(g => g.id === id);
 
@@ -101,6 +113,9 @@ export function Dashboard() {
                 <QuickStatsCard label="Active Members" value={members.length} />
                 <QuickStatsCard label="Total Expenses" value={expenses.length} />
             </div>
+
+            {/* Spending by Category */}
+            <SpendingByCategoryCard data={categorySpending} currency={currency} isLoading={categorySpendingLoading} />
         </div>
     );
 }
