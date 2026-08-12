@@ -20,6 +20,20 @@ export const SplitType = {
 
 export type SplitType = typeof SplitType[keyof typeof SplitType];
 
+export const ExpenseCategory = {
+    FOOD: 'FOOD',
+    TRANSPORT: 'TRANSPORT',
+    RENT: 'RENT',
+    UTILITIES: 'UTILITIES',
+    ENTERTAINMENT: 'ENTERTAINMENT',
+    SHOPPING: 'SHOPPING',
+    TRAVEL: 'TRAVEL',
+    HEALTH: 'HEALTH',
+    OTHER: 'OTHER'
+} as const;
+
+export type ExpenseCategory = typeof ExpenseCategory[keyof typeof ExpenseCategory];
+
 export interface Expense {
     id: string;
     description: string;
@@ -28,6 +42,7 @@ export interface Expense {
     payers: Payer[]; // The people who paid
     date: string; // ISO date string
     splitType: SplitType;
+    category?: ExpenseCategory; // Optional — defaults to OTHER server-side
     splits: Split[]; // Breakdown of who owes what
     createdAt: number;
     payerId?: string; // Legacy support
@@ -37,6 +52,7 @@ export interface CreateExpenseRequest {
     description: string;
     amount: number;
     splitType: SplitType;
+    category?: ExpenseCategory;
     currency: string;
     payers: Payer[];
     splits: Split[];
@@ -72,6 +88,7 @@ export interface HistoryTransaction {
         name: string;
     }[];
     splitType?: SplitType;
+    category?: ExpenseCategory;
     splits?: Split[];
     // SETTLEMENT fields
     from?: HistoryMember;
@@ -84,4 +101,9 @@ export interface PaginatedHistoryResponse {
     items: HistoryTransaction[];
     nextCursor: string | null;
     hasMore: boolean;
+}
+
+export interface CategorySpending {
+    category: ExpenseCategory;
+    totalCents: number;
 }
