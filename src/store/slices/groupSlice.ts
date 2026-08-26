@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
 import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
-import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, HistoryTransaction, PaginatedHistoryResponse, CategorySpending } from '../../types/expense.types';
+import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, HistoryTransaction, PaginatedHistoryResponse, CategorySpending, PersonSpending, PersonCategorySpending, TopExpenseItem } from '../../types/expense.types';
 import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest, ExchangeRatesResponse, SettleAllRequest, SettleGuestRequest } from '../../types/group.types';
 import type { Member } from '../../types/member.types';
 import { api } from '../../lib/api';
@@ -34,6 +34,15 @@ interface GroupState {
     categorySpending: CategorySpending[] | null;
     categorySpendingLoading: boolean;
     categorySpendingError: string | null;
+    spendingByPerson: PersonSpending[] | null;
+    spendingByPersonLoading: boolean;
+    spendingByPersonError: string | null;
+    spendingByPersonCategory: PersonCategorySpending[] | null;
+    spendingByPersonCategoryLoading: boolean;
+    spendingByPersonCategoryError: string | null;
+    topExpenses: TopExpenseItem[] | null;
+    topExpensesLoading: boolean;
+    topExpensesError: string | null;
     error: string | null;
 }
 
@@ -59,6 +68,15 @@ const initialState: GroupState = {
     categorySpending: null,
     categorySpendingLoading: false,
     categorySpendingError: null,
+    spendingByPerson: null,
+    spendingByPersonLoading: false,
+    spendingByPersonError: null,
+    spendingByPersonCategory: null,
+    spendingByPersonCategoryLoading: false,
+    spendingByPersonCategoryError: null,
+    topExpenses: null,
+    topExpensesLoading: false,
+    topExpensesError: null,
     error: null,
 };
 
@@ -110,6 +128,27 @@ export const fetchSpendingByCategory = createAsyncThunk(
     'groups/fetchSpendingByCategory',
     async ({ groupId, currency }: { groupId: string; currency?: string }) => {
         return await api.get<CategorySpending[]>(API_ENDPOINTS.GROUPS.EXPENSES_BY_CATEGORY(groupId, currency));
+    }
+);
+
+export const fetchSpendingByPerson = createAsyncThunk(
+    'groups/fetchSpendingByPerson',
+    async ({ groupId, currency, metric }: { groupId: string; currency?: string; metric?: 'paid' | 'share' }) => {
+        return await api.get<PersonSpending[]>(API_ENDPOINTS.GROUPS.EXPENSES_BY_PERSON(groupId, currency, metric));
+    }
+);
+
+export const fetchSpendingByPersonCategory = createAsyncThunk(
+    'groups/fetchSpendingByPersonCategory',
+    async ({ groupId, currency }: { groupId: string; currency?: string }) => {
+        return await api.get<PersonCategorySpending[]>(API_ENDPOINTS.GROUPS.EXPENSES_BY_PERSON_CATEGORY(groupId, currency));
+    }
+);
+
+export const fetchTopExpenses = createAsyncThunk(
+    'groups/fetchTopExpenses',
+    async ({ groupId, currency, limit }: { groupId: string; currency?: string; limit?: number }) => {
+        return await api.get<TopExpenseItem[]>(API_ENDPOINTS.GROUPS.EXPENSES_TOP(groupId, currency, limit));
     }
 );
 
@@ -529,6 +568,51 @@ const groupSlice = createSlice({
                 state.categorySpendingLoading = false;
                 state.categorySpending = null;
                 state.categorySpendingError = action.error.message || 'Failed to fetch spending by category';
+            })
+            // Fetch Spending By Person
+            .addCase(fetchSpendingByPerson.pending, (state) => {
+                state.spendingByPersonLoading = true;
+                state.spendingByPersonError = null;
+            })
+            .addCase(fetchSpendingByPerson.fulfilled, (state, action) => {
+                state.spendingByPersonLoading = false;
+                state.spendingByPerson = action.payload;
+                state.spendingByPersonError = null;
+            })
+            .addCase(fetchSpendingByPerson.rejected, (state, action) => {
+                state.spendingByPersonLoading = false;
+                state.spendingByPerson = null;
+                state.spendingByPersonError = action.error.message || 'Failed to fetch spending by person';
+            })
+            // Fetch Spending By Person And Category
+            .addCase(fetchSpendingByPersonCategory.pending, (state) => {
+                state.spendingByPersonCategoryLoading = true;
+                state.spendingByPersonCategoryError = null;
+            })
+            .addCase(fetchSpendingByPersonCategory.fulfilled, (state, action) => {
+                state.spendingByPersonCategoryLoading = false;
+                state.spendingByPersonCategory = action.payload;
+                state.spendingByPersonCategoryError = null;
+            })
+            .addCase(fetchSpendingByPersonCategory.rejected, (state, action) => {
+                state.spendingByPersonCategoryLoading = false;
+                state.spendingByPersonCategory = null;
+                state.spendingByPersonCategoryError = action.error.message || 'Failed to fetch category breakdown per person';
+            })
+            // Fetch Top Expenses
+            .addCase(fetchTopExpenses.pending, (state) => {
+                state.topExpensesLoading = true;
+                state.topExpensesError = null;
+            })
+            .addCase(fetchTopExpenses.fulfilled, (state, action) => {
+                state.topExpensesLoading = false;
+                state.topExpenses = action.payload;
+                state.topExpensesError = null;
+            })
+            .addCase(fetchTopExpenses.rejected, (state, action) => {
+                state.topExpensesLoading = false;
+                state.topExpenses = null;
+                state.topExpensesError = action.error.message || 'Failed to fetch top expenses';
             })
             // Fetch Balance Summary (cross-group totals)
             .addCase(fetchBalanceSummary.pending, (state) => {

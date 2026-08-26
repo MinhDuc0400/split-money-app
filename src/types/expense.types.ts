@@ -107,3 +107,26 @@ export interface CategorySpending {
     category: ExpenseCategory;
     totalCents: number;
 }
+
+export interface PersonSpending {
+    memberId: string;
+    name: string;
+    totalCents: number;
+}
+
+export interface PersonCategorySpending {
+    memberId: string;
+    name: string;
+    category: ExpenseCategory;
+    totalCents: number;
+}
+
+export interface TopExpenseItem {
+    id: string;
+    description: string;
+    amount: number;
+    currency: string;
+    category: ExpenseCategory;
+    date: string;
+    payerNames: string[];
+}

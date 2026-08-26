@@ -20,6 +20,22 @@ export const API_ENDPOINTS = {
         SETTLEMENTS: (id: string) => `${API_BASE_URL}/groups/${id}/settlements`,
         EXPENSES_BY_CATEGORY: (id: string, currency?: string) =>
             `${API_BASE_URL}/groups/${id}/expenses/by-category${currency ? `?currency=${currency}` : ''}`,
+        EXPENSES_BY_PERSON: (id: string, currency?: string, metric?: 'paid' | 'share') => {
+            const params = new URLSearchParams();
+            if (currency) params.set('currency', currency);
+            if (metric) params.set('metric', metric);
+            const qs = params.toString();
+            return `${API_BASE_URL}/groups/${id}/expenses/by-person${qs ? `?${qs}` : ''}`;
+        },
+        EXPENSES_BY_PERSON_CATEGORY: (id: string, currency?: string) =>
+            `${API_BASE_URL}/groups/${id}/expenses/by-person-category${currency ? `?currency=${currency}` : ''}`,
+        EXPENSES_TOP: (id: string, currency?: string, limit?: number) => {
+            const params = new URLSearchParams();
+            if (currency) params.set('currency', currency);
+            if (limit) params.set('limit', String(limit));
+            const qs = params.toString();
+            return `${API_BASE_URL}/groups/${id}/expenses/top${qs ? `?${qs}` : ''}`;
+        },
         SETTLE_ALL: (id: string) => `${API_BASE_URL}/groups/${id}/settlements/settle-all`,
         SETTLE_GUEST: (id: string) => `${API_BASE_URL}/groups/${id}/settle-guest`,
         EXPENSE_BY_ID: (groupId: string, expenseId: string) => `${API_BASE_URL}/groups/${groupId}/expenses/${expenseId}`,
