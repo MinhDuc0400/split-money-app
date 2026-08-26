@@ -2,6 +2,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { SummaryCard } from './SummaryCard';
 import { formatAmount } from '../../lib/currency';
 import { CATEGORY_ORDER, CATEGORY_LABELS, CATEGORY_ICONS, CATEGORY_COLORS } from '../../lib/expenseCategories';
+import { capChartSlices } from '../../lib/chartSlices';
 import type { CategorySpending, ExpenseCategory } from '../../types/expense.types';
 
 interface SpendingByCategoryCardProps {
@@ -22,6 +23,8 @@ export function SpendingByCategoryCard({ data, currency, isLoading, error }: Spe
         return entry && entry.totalCents > 0 ? { category, amount: entry.totalCents / 100 } : null;
     }).filter((d): d is ChartDatum => d !== null);
 
+    const cappedData = capChartSlices(chartData.map((d) => ({ key: d.category, amount: d.amount })));
+
     return (
         <SummaryCard title="Spending by Category">
             {isLoading ? (
@@ -35,21 +38,24 @@ export function SpendingByCategoryCard({ data, currency, isLoading, error }: Spe
                     <ResponsiveContainer width="100%" height={200}>
                         <PieChart>
                             <Pie
-                                data={chartData}
+                                data={cappedData}
                                 dataKey="amount"
-                                nameKey="category"
+                                nameKey="key"
                                 innerRadius={50}
                                 outerRadius={80}
                                 paddingAngle={2}
                             >
-                                {chartData.map((d) => (
-                                    <Cell key={d.category} fill={CATEGORY_COLORS[d.category]} />
+                                {cappedData.map((d) => (
+                                    <Cell
+                                        key={d.key}
+                                        fill={d.isOther ? '#94a3b8' : CATEGORY_COLORS[d.key as ExpenseCategory]}
+                                    />
                                 ))}
                             </Pie>
                             <Tooltip
                                 formatter={(value, name) => [
                                     formatAmount(value as number, currency),
-                                    CATEGORY_LABELS[name as ExpenseCategory],
+                                    name === 'other' ? 'Other' : CATEGORY_LABELS[name as ExpenseCategory],
                                 ]}
                             />
                         </PieChart>
@@ -57,6 +63,8 @@ export function SpendingByCategoryCard({ data, currency, isLoading, error }: Spe
                     <div className="grid grid-cols-2 gap-2">
                         {chartData.map((d) => {
                             const Icon = CATEGORY_ICONS[d.category];
+                            const total = chartData.reduce((sum, c) => sum + c.amount, 0);
+                            const pct = total > 0 ? Math.round((d.amount / total) * 100) : 0;
                             return (
                                 <div key={d.category} className="flex items-center gap-2 text-xs">
                                     <span
@@ -66,6 +74,7 @@ export function SpendingByCategoryCard({ data, currency, isLoading, error }: Spe
                                     <Icon className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                     <span className="flex-1 truncate">{CATEGORY_LABELS[d.category]}</span>
                                     <span className="font-bold tabular-nums">{formatAmount(d.amount, currency)}</span>
+                                    <span className="text-muted-foreground tabular-nums">{pct}%</span>
                                 </div>
                             );
                         })}

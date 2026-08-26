@@ -2,6 +2,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { SummaryCard } from './SummaryCard';
 import { formatAmount } from '../../lib/currency';
 import { getMemberColor } from '../../lib/memberColors';
+import { capChartSlices } from '../../lib/chartSlices';
 import type { PersonSpending } from '../../types/expense.types';
 
 interface SpendingByPersonCardProps {
@@ -16,6 +17,7 @@ interface SpendingByPersonCardProps {
 export function SpendingByPersonCard({ data, currency, metric, onMetricChange, isLoading, error }: SpendingByPersonCardProps) {
     const chartData = (data ?? []).filter((d) => d.totalCents > 0);
     const total = chartData.reduce((sum, d) => sum + d.totalCents, 0);
+    const cappedData = capChartSlices(chartData.map((d) => ({ key: d.memberId, amount: d.totalCents })));
 
     return (
         <SummaryCard title="Spending by Person">
@@ -46,21 +48,24 @@ export function SpendingByPersonCard({ data, currency, metric, onMetricChange, i
                     <ResponsiveContainer width="100%" height={200}>
                         <PieChart>
                             <Pie
-                                data={chartData}
-                                dataKey="totalCents"
-                                nameKey="name"
+                                data={cappedData}
+                                dataKey="amount"
+                                nameKey="key"
                                 innerRadius={50}
                                 outerRadius={80}
                                 paddingAngle={2}
                             >
-                                {chartData.map((d) => (
-                                    <Cell key={d.memberId} fill={getMemberColor(d.memberId)} />
+                                {cappedData.map((d) => (
+                                    <Cell
+                                        key={d.key}
+                                        fill={d.isOther ? '#94a3b8' : getMemberColor(d.key)}
+                                    />
                                 ))}
                             </Pie>
                             <Tooltip
                                 formatter={(value, name) => [
                                     formatAmount((value as number) / 100, currency),
-                                    name as string,
+                                    name === 'other' ? 'Other' : chartData.find((d) => d.memberId === name)?.name ?? name,
                                 ]}
                             />
                         </PieChart>
