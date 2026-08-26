@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft } from 'lucide-react';
+import { Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft, BarChart3 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { AppTab } from '../constants/app.constants';
@@ -150,6 +150,14 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                             >
                                 <Users className="w-5 h-5" />
                                 <span className="font-medium">Manage members</span>
+                            </button>
+
+                            <button
+                                onClick={() => { void navigate(`/group/${activeGroupId}/analytics`); }}
+                                className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname.includes('/analytics') ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
+                            >
+                                <BarChart3 className="w-5 h-5" />
+                                <span className="font-medium">Analytics</span>
                             </button>
                         </>
                     )}

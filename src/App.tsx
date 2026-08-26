@@ -20,6 +20,7 @@ const Dashboard = lazy(() => import('./components/Dashboard').then(m => ({ defau
 const GlobalDashboard = lazy(() => import('./components/GlobalDashboard').then(m => ({ default: m.GlobalDashboard })));
 const GroupDetail = lazy(() => import('./components/GroupDetail').then(m => ({ default: m.GroupDetail })));
 const MemberManager = lazy(() => import('./components/MemberManager').then(m => ({ default: m.MemberManager })));
+const GroupAnalytics = lazy(() => import('./components/GroupAnalytics').then(m => ({ default: m.GroupAnalytics })));
 const AddExpense = lazy(() => import('./components/AddExpense').then(m => ({ default: m.AddExpense })));
 const MobileGroupList = lazy(() => import('./components/MobileGroupList').then(m => ({ default: m.MobileGroupList })));
 
@@ -58,6 +59,7 @@ function AppInner() {
                     <Route path="/group/:id" element={<Dashboard />} />
                     <Route path="/group/:id/details" element={<GroupDetail />} />
                     <Route path="/group/:id/members" element={<MemberManager />} />
+                    <Route path="/group/:id/analytics" element={<GroupAnalytics />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
             </Suspense>
