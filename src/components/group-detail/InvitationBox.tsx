@@ -22,7 +22,7 @@ export const InvitationBox: React.FC<InvitationBoxProps> = ({ inviteCode }) => {
     return (
         <button
             onClick={handleCopy}
-            className="group relative flex items-center gap-2 px-3 py-1.5 bg-secondary/50 hover:bg-secondary rounded-full border border-border/50 transition-all active:scale-95 overflow-hidden"
+            className="group relative flex items-center gap-2 px-3 py-1.5 bg-secondary/50 hover:bg-secondary rounded-full border border-border/50 transition-all active:scale-95 overflow-hidden shrink-0"
             title="Click to copy invite code"
         >
             <AnimatePresence mode="wait">

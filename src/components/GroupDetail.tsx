@@ -348,13 +348,13 @@ export function GroupDetail() {
                     </div>
                 </div>
 
-                <div className="flex items-center gap-3 px-2 sm:px-0">
+                <div className="flex items-center gap-3 px-2 sm:px-0 overflow-x-auto no-scrollbar">
                     {activeGroup?.inviteCode && (
                         <InvitationBox inviteCode={activeGroup.inviteCode} />
                     )}
                     <button
                         onClick={() => { setActiveTab('members'); }}
-                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors shrink-0"
                     >
                         <Users className="w-3.5 h-3.5" />
                         Manage members
@@ -363,7 +363,7 @@ export function GroupDetail() {
                         <button
                             onClick={() => void handleDeleteGroup()}
                             disabled={isDeletingGroup}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50 shrink-0"
                         >
                             <Trash2 className="w-3.5 h-3.5" />
                             {isDeletingGroup ? 'Deleting…' : 'Delete group'}
@@ -372,7 +372,7 @@ export function GroupDetail() {
                         <button
                             onClick={() => void handleLeaveGroup()}
                             disabled={isLeavingGroup}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50"
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50 shrink-0"
                         >
                             <LogOut className="w-3.5 h-3.5" />
                             {isLeavingGroup ? 'Leaving…' : 'Leave group'}

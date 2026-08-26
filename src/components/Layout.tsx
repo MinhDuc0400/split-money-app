@@ -161,7 +161,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                     </div>
 
                     <div className="flex-1 max-w-[200px] mx-2 flex justify-center">
-                        {location.pathname !== '/' ? (
+                        {/^\/group\/[^/]+\/details$/.test(location.pathname) ? null : location.pathname !== '/' ? (
                             <button
                                 onClick={() => void navigate('/')}
                                 className="flex items-center gap-1 text-sm font-medium text-muted-foreground"
