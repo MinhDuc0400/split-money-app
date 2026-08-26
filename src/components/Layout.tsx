@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft, BarChart3 } from 'lucide-react';
+import { Users, PlusCircle, LogIn, LogOut, Home, ChevronLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { ThemeToggle } from './ThemeToggle';
 import { AppTab } from '../constants/app.constants';
@@ -44,7 +44,7 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
-    const { groups, switchGroup, activeGroupId } = useGroup();
+    const { groups, switchGroup } = useGroup();
     const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
     const [isActionModalOpen, setIsActionModalOpen] = useState(false);
 
@@ -137,30 +137,6 @@ export function Layout({ children, onAddExpense }: Omit<LayoutProps, 'activeTab'
                             <span className="font-medium">Create or join group</span>
                         </button>
                     </div>
-
-                    {activeGroupId && (
-                        <>
-                            <div className="pt-4 pb-2 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-t border-border/50 mt-2">
-                                Current group
-                            </div>
-
-                            <button
-                                onClick={() => { void navigate(`/group/${activeGroupId}/members`); }}
-                                className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname.includes('/members') ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
-                            >
-                                <Users className="w-5 h-5" />
-                                <span className="font-medium">Manage members</span>
-                            </button>
-
-                            <button
-                                onClick={() => { void navigate(`/group/${activeGroupId}/analytics`); }}
-                                className={cn("w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors", location.pathname.includes('/analytics') ? "bg-primary/10 text-primary" : "hover:bg-secondary")}
-                            >
-                                <BarChart3 className="w-5 h-5" />
-                                <span className="font-medium">Analytics</span>
-                            </button>
-                        </>
-                    )}
                 </nav>
 
                 <div className="pt-4 border-t border-border flex items-center justify-between">
