@@ -14,7 +14,7 @@ import { SplitPercentage } from './expense-form/SplitPercentage';
 import { SplitShares } from './expense-form/SplitShares';
 import { StepDots } from './expense-form/StepDots';
 import { StepNav } from './expense-form/StepNav';
-import { parseAmount, isWhatStepValid, isPayerStepValid, isSplitStepValid } from './expense-form/stepValidation';
+import { parseAmount, isWhatStepValid, isPayerStepValid, isSplitStepValid, getWhatStepHint } from './expense-form/stepValidation';
 import { buildReviewSentence } from './expense-form/reviewSentence';
 import { removeThousandsSeparator, CURRENCIES, CURRENCY_SYMBOLS, CURRENCY_NAMES } from '../lib/currency';
 
@@ -307,6 +307,12 @@ export function ExpenseForm({ initialData, onSubmit, groupId, submitLabel = 'Add
                         currency={currency}
                         autoFocus={!initialData}
                     />
+
+                    {getWhatStepHint(description, amount) && (
+                        <p className="text-xs text-muted-foreground text-center -mt-2">
+                            {getWhatStepHint(description, amount)}
+                        </p>
+                    )}
 
                     <div className="space-y-2">
                         <label className="text-sm font-medium text-muted-foreground">Currency</label>

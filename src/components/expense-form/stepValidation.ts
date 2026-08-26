@@ -12,6 +12,15 @@ export function isWhatStepValid(description: string, amount: string): boolean {
     return description.trim().length > 0 && parseAmount(amount) > 0;
 }
 
+export function getWhatStepHint(description: string, amount: string): string | null {
+    const hasDescription = description.trim().length > 0;
+    const hasAmount = parseAmount(amount) > 0;
+    if (hasDescription && hasAmount) return null;
+    if (!hasDescription && !hasAmount) return 'Add a description and an amount to continue';
+    if (!hasDescription) return 'Add a description to continue';
+    return 'Enter an amount greater than zero to continue';
+}
+
 export function isPayerStepValid(isMultiPayer: boolean, payers: Payer[], amount: string): boolean {
     if (!isMultiPayer) return !!payers[0]?.memberId;
     const total = parseAmount(amount);
