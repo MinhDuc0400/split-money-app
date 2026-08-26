@@ -12,6 +12,9 @@ import { EditExpenseModal } from './group-detail/EditExpenseModal';
 import { SettleUpModal } from './group-detail/SettleUpModal';
 import { SettleAllModal } from './group-detail/SettleAllModal';
 import { InvitationBox } from './group-detail/InvitationBox';
+import { GroupDetailTabs, type GroupDetailTab } from './group-detail/GroupDetailTabs';
+import { MemberManager } from './MemberManager';
+import { GroupAnalytics } from './GroupAnalytics';
 import { AddExpense } from './AddExpense';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
@@ -59,6 +62,7 @@ export function GroupDetail() {
     const dispatch = useAppDispatch();
     const pendingDeletes = useAppSelector(state => state.pendingDeletes.items);
     const [isAddingExpense, setIsAddingExpense] = useState(false);
+    const [activeTab, setActiveTab] = useState<GroupDetailTab>('overview');
 
     // Fetch group details on mount or ID change
     useEffect(() => {
@@ -349,7 +353,7 @@ export function GroupDetail() {
                         <InvitationBox inviteCode={activeGroup.inviteCode} />
                     )}
                     <button
-                        onClick={() => { void navigate(`/group/${routeId}/members`); }}
+                        onClick={() => { setActiveTab('members'); }}
                         className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors"
                     >
                         <Users className="w-3.5 h-3.5" />
@@ -377,6 +381,8 @@ export function GroupDetail() {
                 </div>
             </div>
 
+            <GroupDetailTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
             {/* Action error alerts */}
             {leaveError && (
                 <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
@@ -391,57 +397,65 @@ export function GroupDetail() {
                 </div>
             )}
 
-            {/* Settlement plan first — it answers "what do I do now" */}
-            <SettlementPlanList
-                settlements={settlementPlan}
-                getMemberName={getMemberName}
-                getMemberAvatar={getMemberAvatar}
-                isGuestMember={isGuestMember}
-                onSettle={handleSettleClick}
-                onSettleAll={handleSettleAllClick}
-                currentMemberId={currentUserMember?.id}
-            />
+            {activeTab === 'overview' && (
+                <>
+                    {/* Settlement plan first — it answers "what do I do now" */}
+                    <SettlementPlanList
+                        settlements={settlementPlan}
+                        getMemberName={getMemberName}
+                        getMemberAvatar={getMemberAvatar}
+                        isGuestMember={isGuestMember}
+                        onSettle={handleSettleClick}
+                        onSettleAll={handleSettleAllClick}
+                        currentMemberId={currentUserMember?.id}
+                    />
 
-            {/* Your balance summary */}
-            <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                    <BalanceCard type="owed" balances={owedToYou} />
-                </div>
-                <div className="flex-1">
-                    <BalanceCard type="owing" balances={youOwe} />
-                </div>
-            </div>
-
-            {/* Member balances */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between px-2">
-                    <div className="flex items-center gap-2">
-                        <Users className="w-5 h-5 text-primary" />
-                        <h3 className="font-bold text-lg">Group balances</h3>
+                    {/* Your balance summary */}
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1">
+                            <BalanceCard type="owed" balances={owedToYou} />
+                        </div>
+                        <div className="flex-1">
+                            <BalanceCard type="owing" balances={youOwe} />
+                        </div>
                     </div>
-                </div>
-                <MemberBalancesList members={members} serverBalances={groupBalances} />
-            </div>
 
-            {/* History */}
-            <div className="space-y-6">
-                <div className="flex items-center justify-between px-2">
-                    <h2 className="text-2xl font-bold tracking-tight">Payment history</h2>
-                </div>
+                    {/* Member balances */}
+                    <div className="space-y-4">
+                        <div className="flex items-center justify-between px-2">
+                            <div className="flex items-center gap-2">
+                                <Users className="w-5 h-5 text-primary" />
+                                <h3 className="font-bold text-lg">Group balances</h3>
+                            </div>
+                        </div>
+                        <MemberBalancesList members={members} serverBalances={groupBalances} />
+                    </div>
 
-                <HistoryList
-                    items={visibleTransactionItems}
-                    hasMore={transactions.hasMore}
-                    isLoadingMore={transactions.isLoadingMore}
-                    loadMoreError={transactions.loadMoreError}
-                    onLoadMore={handleLoadMore}
-                    currency={currency}
-                    getMemberName={getMemberName}
-                    onEdit={handleEditClick}
-                    onDelete={handleDeleteClick}
-                    onAddExpense={() => { setIsAddingExpense(true); }}
-                />
-            </div>
+                    {/* History */}
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between px-2">
+                            <h2 className="text-2xl font-bold tracking-tight">Payment history</h2>
+                        </div>
+
+                        <HistoryList
+                            items={visibleTransactionItems}
+                            hasMore={transactions.hasMore}
+                            isLoadingMore={transactions.isLoadingMore}
+                            loadMoreError={transactions.loadMoreError}
+                            onLoadMore={handleLoadMore}
+                            currency={currency}
+                            getMemberName={getMemberName}
+                            onEdit={handleEditClick}
+                            onDelete={handleDeleteClick}
+                            onAddExpense={() => { setIsAddingExpense(true); }}
+                        />
+                    </div>
+                </>
+            )}
+
+            {activeTab === 'members' && <MemberManager />}
+
+            {activeTab === 'analytics' && <GroupAnalytics groupId={routeId ?? ''} />}
 
             {/* Edit Modal */}
             <EditExpenseModal
