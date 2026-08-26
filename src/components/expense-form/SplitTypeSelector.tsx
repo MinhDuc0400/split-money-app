@@ -15,7 +15,7 @@ export function SplitTypeSelector({ splitType, setSplitType }: SplitTypeSelector
                     type="button"
                     onClick={() => { setSplitType(type); }}
                     className={cn(
-                        "py-2 px-3 rounded-md text-sm font-medium transition-all",
+                        "py-2 px-3 rounded-md text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                         splitType === type ? "bg-card shadow-sm text-primary" : "text-muted-foreground hover:text-foreground"
                     )}
                 >

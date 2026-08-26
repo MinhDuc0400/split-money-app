@@ -19,7 +19,7 @@ export function PayerSelector({ members, payerId, setPayerId }: PayerSelectorPro
                         type="button"
                         onClick={() => { setPayerId(member.id); }}
                         className={cn(
-                            "flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg transition-all border-2",
+                            "flex flex-col items-center gap-1 min-w-[60px] p-2 rounded-lg transition-all border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
                             payerId === member.id
                                 ? "bg-primary/10 border-primary"
                                 : "bg-transparent border-transparent hover:bg-secondary/50"

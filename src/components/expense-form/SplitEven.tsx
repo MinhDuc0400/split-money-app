@@ -20,20 +20,20 @@ export function SplitEven({ members, included, setIncluded, equalEach, currency 
             <div className="space-y-2">
                 {members.map(member => (
                     <label key={member.id} className="flex items-center gap-3 cursor-pointer group hover:bg-secondary/30 p-2 rounded-lg transition-colors -mx-2">
+                        <input
+                            type="checkbox"
+                            checked={!!included[member.id]}
+                            onChange={(e) => { setIncluded(prev => ({ ...prev, [member.id]: e.target.checked })); }}
+                            className="sr-only peer"
+                        />
                         <div className={cn(
-                            "flex items-center justify-center w-5 h-5 rounded border transition-all duration-200",
+                            "flex items-center justify-center w-5 h-5 rounded border transition-all duration-200 peer-focus-visible:ring-2 peer-focus-visible:ring-primary/50 peer-focus-visible:ring-offset-2",
                             included[member.id]
                                 ? "bg-primary border-primary text-primary-foreground"
                                 : "border-muted-foreground/30 bg-background group-hover:border-primary/50"
                         )}>
                             {included[member.id] && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
                         </div>
-                        <input
-                            type="checkbox"
-                            checked={!!included[member.id]}
-                            onChange={(e) => { setIncluded(prev => ({ ...prev, [member.id]: e.target.checked })); }}
-                            className="hidden"
-                        />
                         <Avatar name={member.name} src={member.avatar} className="w-6 h-6" />
                         <span className="flex-1 text-sm flex items-center gap-2">{member.name}{member.isGuest && <GuestTag />}</span>
                     </label>
