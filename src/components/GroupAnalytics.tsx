@@ -1,7 +1,4 @@
 import { useEffect, useMemo, useState, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { useGroupEvents } from '../hooks/useGroupEvents';
 import { useGroup } from '../context/GroupContext';
 import { SpendingByCategoryCard } from './dashboard/SpendingByCategoryCard';
 import { SpendingByPersonCard } from './dashboard/SpendingByPersonCard';
@@ -12,19 +9,13 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { fetchSpendingByCategory, fetchSpendingByPerson, fetchSpendingByPersonCategory, fetchTopExpenses } from '../store/slices/groupSlice';
 import { SplitType, type Expense, type Split } from '../types/expense.types';
 
-export function GroupAnalytics() {
-    const navigate = useNavigate();
-    const { id } = useParams<{ id: string }>();
-    useGroupEvents(id ?? '');
-    const { expenses, currency, groupName, activeGroupId, switchGroup, updateExpense } = useGroup();
-    const dispatch = useAppDispatch();
+interface GroupAnalyticsProps {
+    groupId: string;
+}
 
-    // Sync active group with URL, same as Dashboard.tsx.
-    useEffect(() => {
-        if (id && id !== activeGroupId) {
-            switchGroup(id);
-        }
-    }, [id, activeGroupId, switchGroup]);
+export function GroupAnalytics({ groupId }: GroupAnalyticsProps) {
+    const { expenses, currency, updateExpense } = useGroup();
+    const dispatch = useAppDispatch();
 
     const categorySpending = useAppSelector(state => state.groups.categorySpending);
     const categorySpendingLoading = useAppSelector(state => state.groups.categorySpendingLoading);
@@ -46,23 +37,23 @@ export function GroupAnalytics() {
     // already-mounted page, so there is no first-reveal gating to build —
     // navigating here is the reveal.
     useEffect(() => {
-        if (!id) return;
-        void dispatch(fetchSpendingByCategory({ groupId: id, currency }));
-        void dispatch(fetchSpendingByPerson({ groupId: id, currency, metric: personMetric }));
-        void dispatch(fetchSpendingByPersonCategory({ groupId: id, currency }));
-        void dispatch(fetchTopExpenses({ groupId: id, currency, limit: 5 }));
+        if (!groupId) return;
+        void dispatch(fetchSpendingByCategory({ groupId, currency }));
+        void dispatch(fetchSpendingByPerson({ groupId, currency, metric: personMetric }));
+        void dispatch(fetchSpendingByPersonCategory({ groupId, currency }));
+        void dispatch(fetchTopExpenses({ groupId, currency, limit: 5 }));
         // personMetric is deliberately excluded — metric changes are handled
         // by handleMetricChange below, which dispatches only the one
         // affected thunk instead of refetching all four cards.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [id, currency, dispatch]);
+    }, [groupId, currency, dispatch]);
 
     const handleMetricChange = useCallback((metric: 'paid' | 'share') => {
         setPersonMetric(metric);
-        if (id) {
-            void dispatch(fetchSpendingByPerson({ groupId: id, currency, metric }));
+        if (groupId) {
+            void dispatch(fetchSpendingByPerson({ groupId, currency, metric }));
         }
-    }, [id, currency, dispatch]);
+    }, [groupId, currency, dispatch]);
 
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
     const [isUpdatingExpense, setIsUpdatingExpense] = useState(false);
@@ -107,21 +98,7 @@ export function GroupAnalytics() {
     };
 
     return (
-        <div className="space-y-8 pb-12">
-            {/* Header — mirrors GroupDetail.tsx's sticky back-button header */}
-            <div className="bg-card/50 backdrop-blur-sm sticky top-0 z-30 -mx-4 px-4 py-4 border-b border-border/50 flex items-center gap-3">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="p-2 hover:bg-secondary rounded-full transition-colors active:scale-95"
-                >
-                    <ArrowLeft className="w-5 h-5" />
-                </button>
-                <div>
-                    <h1 className="text-2xl font-black tracking-tight">Analytics</h1>
-                    <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{groupName}</p>
-                </div>
-            </div>
-
+        <div className="space-y-6">
             <div className="space-y-6">
                 <SpendingByCategoryCard data={categorySpending} currency={currency} isLoading={categorySpendingLoading} error={categorySpendingError} />
                 <SpendingByPersonCard
