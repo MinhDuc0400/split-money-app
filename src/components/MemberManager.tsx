@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { LogOut, Trash2 } from 'lucide-react';
 import { AddGuestForm } from './member-manager/AddGuestForm';
 import { MemberListItem } from './member-manager/MemberListItem';
 import { ResetConfirmDialog } from './member-manager/ResetConfirmDialog';
 import { InvitationBox } from './group-detail/InvitationBox';
+import { useAppSelector } from '../store/hooks';
+import { isBalanceSettled } from '../lib/accounting';
 
 function errorMessage(err: unknown, fallback: string): string {
     if (err && typeof err === 'object' && 'message' in err && typeof (err as { message: unknown }).message === 'string') {
@@ -14,11 +18,29 @@ function errorMessage(err: unknown, fallback: string): string {
 }
 
 export function MemberManager() {
-    const { members, balances, activeGroup, addMember, updateMemberName, removeMember, resetGroup } = useGroup();
+    const navigate = useNavigate();
+    const {
+        members,
+        balances,
+        activeGroup,
+        currentUserBalance,
+        groupBalances,
+        addMember,
+        updateMemberName,
+        removeMember,
+        resetGroup,
+        leaveGroup,
+        deleteGroup,
+    } = useGroup();
+    const authUser = useAppSelector(state => state.auth.user);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const [removeCandidate, setRemoveCandidate] = useState<string | null>(null);
     const [isRemoving, setIsRemoving] = useState(false);
     const [actionError, setActionError] = useState<string | null>(null);
+    const [isLeavingGroup, setIsLeavingGroup] = useState(false);
+    const [leaveError, setLeaveError] = useState<string | null>(null);
+    const [isDeletingGroup, setIsDeletingGroup] = useState(false);
+    const [deleteGroupError, setDeleteGroupError] = useState<string | null>(null);
 
     const handleAddGuest = async (name: string) => {
         setActionError(null);
@@ -61,12 +83,83 @@ export function MemberManager() {
 
     const candidateName = members.find(m => m.id === removeCandidate)?.name || '';
 
+    const currentUserMember = useMemo(() => {
+        if (!authUser || !members.length) return null;
+        return members.find(m => m.userId === authUser.id);
+    }, [authUser, members]);
+
+    // Default to "not settled" (blocking) until real balance data has loaded,
+    // rather than optimistically allowing leave/delete on incomplete data.
+    const isSettledUp = useMemo(() => {
+        if (!currentUserBalance) return false;
+        return Object.values(currentUserBalance.balances).every(
+            b => isBalanceSettled(b.totalOwed) && isBalanceSettled(b.totalOwe)
+        );
+    }, [currentUserBalance]);
+
+    const isGroupFullySettled = useMemo(() => {
+        if (!groupBalances) return false;
+        return Object.values(groupBalances).every(members =>
+            members.every(m => isBalanceSettled(m.balance))
+        );
+    }, [groupBalances]);
+
+    const isOwner = currentUserMember?.role === 'OWNER';
+
+    const handleLeaveGroup = async () => {
+        if (!activeGroup) return;
+        if (!isSettledUp) {
+            setLeaveError('You have an unsettled balance. Settle up before leaving the group.');
+            return;
+        }
+        setIsLeavingGroup(true);
+        try {
+            await leaveGroup(activeGroup.id);
+            navigate('/');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to leave group';
+            setLeaveError(msg);
+        } finally {
+            setIsLeavingGroup(false);
+        }
+    };
+
+    const handleDeleteGroup = async () => {
+        if (!activeGroup) return;
+        if (!isGroupFullySettled) {
+            setDeleteGroupError("Balances aren't settled. Everyone needs to settle up before the group can be deleted.");
+            return;
+        }
+        setIsDeletingGroup(true);
+        try {
+            await deleteGroup(activeGroup.id);
+            navigate('/');
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to delete group';
+            setDeleteGroupError(msg);
+        } finally {
+            setIsDeletingGroup(false);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {actionError && (
                 <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
                     <p className="text-sm font-medium">{actionError}</p>
                     <button onClick={() => { setActionError(null); }} aria-label="Dismiss error" className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
+                </div>
+            )}
+            {leaveError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{leaveError}</p>
+                    <button onClick={() => setLeaveError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
+                </div>
+            )}
+            {deleteGroupError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{deleteGroupError}</p>
+                    <button onClick={() => setDeleteGroupError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
                 </div>
             )}
 
@@ -166,6 +259,28 @@ export function MemberManager() {
                         onCancel={() => { setShowResetConfirm(false); }}
                     />
                 )}
+
+                <div className="border-t border-border pt-4 mt-4">
+                    {isOwner ? (
+                        <button
+                            onClick={() => void handleDeleteGroup()}
+                            disabled={isDeletingGroup}
+                            className="w-full flex items-center justify-center gap-1.5 border border-destructive/50 text-destructive hover:bg-destructive/10 py-3 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            {isDeletingGroup ? 'Deleting…' : 'Delete group'}
+                        </button>
+                    ) : (
+                        <button
+                            onClick={() => void handleLeaveGroup()}
+                            disabled={isLeavingGroup}
+                            className="w-full flex items-center justify-center gap-1.5 border border-destructive/50 text-destructive hover:bg-destructive/10 py-3 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                            {isLeavingGroup ? 'Leaving…' : 'Leave group'}
+                        </button>
+                    )}
+                </div>
             </div>
         </div>
     );

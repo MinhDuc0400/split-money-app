@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
-import { LogOut, Trash2, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useGroupEvents } from '../hooks/useGroupEvents';
 import { ArrowLeft, Users } from 'lucide-react';
 import { SplitType, type Expense, type Split } from '../types/expense.types';
@@ -47,18 +47,12 @@ export function GroupDetail() {
         activeGroupId,
         fetchGroupById,
         settleUp,
-        leaveGroup,
-        deleteGroup,
     } = useGroup();
     const authUser = useAppSelector(state => state.auth.user);
     const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
     const [settlingPayment, setSettlingPayment] = useState<GroupSettlement | null>(null);
     const [isSettling, setIsSettling] = useState(false);
     const [isUpdatingExpense, setIsUpdatingExpense] = useState(false);
-    const [isLeavingGroup, setIsLeavingGroup] = useState(false);
-    const [leaveError, setLeaveError] = useState<string | null>(null);
-    const [isDeletingGroup, setIsDeletingGroup] = useState(false);
-    const [deleteGroupError, setDeleteGroupError] = useState<string | null>(null);
     const [isExporting, setIsExporting] = useState(false);
     const [exportError, setExportError] = useState<string | null>(null);
     const [settlingAllItems, setSettlingAllItems] = useState<GroupSettlement[] | null>(null);
@@ -239,60 +233,6 @@ export function GroupDetail() {
         }
     };
 
-    // Default to "not settled" (blocking) until real balance data has loaded,
-    // rather than optimistically allowing leave/delete on incomplete data.
-    const isSettledUp = useMemo(() => {
-        if (!currentUserBalance) return false;
-        return Object.values(currentUserBalance.balances).every(
-            b => isBalanceSettled(b.totalOwed) && isBalanceSettled(b.totalOwe)
-        );
-    }, [currentUserBalance]);
-
-    const isGroupFullySettled = useMemo(() => {
-        if (!groupBalances) return false;
-        return Object.values(groupBalances).every(members =>
-            members.every(m => isBalanceSettled(m.balance))
-        );
-    }, [groupBalances]);
-
-    const isOwner = currentUserMember?.role === 'OWNER';
-
-    const handleLeaveGroup = async () => {
-        if (!activeGroup) return;
-        if (!isSettledUp) {
-            setLeaveError('You have an unsettled balance. Settle up before leaving the group.');
-            return;
-        }
-        setIsLeavingGroup(true);
-        try {
-            await leaveGroup(activeGroup.id);
-            navigate('/');
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to leave group';
-            setLeaveError(msg);
-        } finally {
-            setIsLeavingGroup(false);
-        }
-    };
-
-    const handleDeleteGroup = async () => {
-        if (!activeGroup) return;
-        if (!isGroupFullySettled) {
-            setDeleteGroupError("Balances aren't settled. Everyone needs to settle up before the group can be deleted.");
-            return;
-        }
-        setIsDeletingGroup(true);
-        try {
-            await deleteGroup(activeGroup.id);
-            navigate('/');
-        } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : 'Failed to delete group';
-            setDeleteGroupError(msg);
-        } finally {
-            setIsDeletingGroup(false);
-        }
-    };
-
     const handleExport = async () => {
         if (!activeGroupId || isExporting) return;
         setIsExporting(true);
@@ -388,50 +328,12 @@ export function GroupDetail() {
                         <Download className="w-3.5 h-3.5" />
                         {isExporting ? 'Exporting…' : 'Export'}
                     </button>
-                    <button
-                        onClick={() => { setActiveTab('members'); }}
-                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors shrink-0"
-                    >
-                        <Users className="w-3.5 h-3.5" />
-                        Manage members
-                    </button>
-                    {isOwner ? (
-                        <button
-                            onClick={() => void handleDeleteGroup()}
-                            disabled={isDeletingGroup}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50 shrink-0"
-                        >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            {isDeletingGroup ? 'Deleting…' : 'Delete group'}
-                        </button>
-                    ) : (
-                        <button
-                            onClick={() => void handleLeaveGroup()}
-                            disabled={isLeavingGroup}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-destructive border border-destructive/30 hover:bg-destructive/10 rounded-xl transition-colors disabled:opacity-50 shrink-0"
-                        >
-                            <LogOut className="w-3.5 h-3.5" />
-                            {isLeavingGroup ? 'Leaving…' : 'Leave group'}
-                        </button>
-                    )}
                 </div>
             </div>
 
             <GroupDetailTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
             {/* Action error alerts */}
-            {leaveError && (
-                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-                    <p className="text-sm font-medium">{leaveError}</p>
-                    <button onClick={() => setLeaveError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
-                </div>
-            )}
-            {deleteGroupError && (
-                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
-                    <p className="text-sm font-medium">{deleteGroupError}</p>
-                    <button onClick={() => setDeleteGroupError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
-                </div>
-            )}
             {exportError && (
                 <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
                     <p className="text-sm font-medium">{exportError}</p>
