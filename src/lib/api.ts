@@ -61,6 +61,37 @@ async function request<T>(url: string, options: RequestOptions = {}): Promise<T>
     return JSON.parse(text) as T;
 }
 
+async function requestBlob(url: string, options: RequestOptions = {}): Promise<Blob> {
+    const { params, headers, ...rest } = options;
+
+    let finalUrl = url;
+    if (params) {
+        const searchParams = new URLSearchParams(params);
+        finalUrl += `?${searchParams.toString()}`;
+    }
+
+    const token = authUtils.getToken();
+    const defaultHeaders: Record<string, string> = {};
+    if (token) {
+        defaultHeaders['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(finalUrl, {
+        headers: { ...defaultHeaders, ...headers },
+        ...rest,
+    });
+
+    if (!response.ok) {
+        if (response.status === 401) {
+            onUnauthorized?.();
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `Request failed with status ${response.status}`);
+    }
+
+    return response.blob();
+}
+
 export const api = {
     get: <T>(url: string, options?: RequestOptions) => request<T>(url, { ...options, method: 'GET' }),
     post: <T>(url: string, body?: unknown, options?: RequestOptions) =>
@@ -68,4 +99,5 @@ export const api = {
     patch: <T>(url: string, body?: unknown, options?: RequestOptions) =>
         request<T>(url, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
     delete: <T>(url: string, options?: RequestOptions) => request<T>(url, { ...options, method: 'DELETE' }),
+    getBlob: (url: string, options?: RequestOptions) => requestBlob(url, { ...options, method: 'GET' }),
 };

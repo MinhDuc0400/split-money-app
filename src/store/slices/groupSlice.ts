@@ -152,6 +152,13 @@ export const fetchTopExpenses = createAsyncThunk(
     }
 );
 
+export const exportGroupExpenses = createAsyncThunk(
+    'groups/exportExpenses',
+    async ({ groupId }: { groupId: string }) => {
+        return await api.getBlob(API_ENDPOINTS.GROUPS.EXPENSES_EXPORT(groupId));
+    }
+);
+
 export const createGroup = createAsyncThunk('groups/create', async (data: { name: string; currency: string }) => {
     return await api.post<GroupMeta>(API_ENDPOINTS.GROUPS.BASE, data);
 });

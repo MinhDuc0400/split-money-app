@@ -36,6 +36,7 @@ export const API_ENDPOINTS = {
             const qs = params.toString();
             return `${API_BASE_URL}/groups/${id}/expenses/top${qs ? `?${qs}` : ''}`;
         },
+        EXPENSES_EXPORT: (id: string) => `${API_BASE_URL}/groups/${id}/expenses/export`,
         SETTLE_ALL: (id: string) => `${API_BASE_URL}/groups/${id}/settlements/settle-all`,
         SETTLE_GUEST: (id: string) => `${API_BASE_URL}/groups/${id}/settle-guest`,
         EXPENSE_BY_ID: (groupId: string, expenseId: string) => `${API_BASE_URL}/groups/${groupId}/expenses/${expenseId}`,
