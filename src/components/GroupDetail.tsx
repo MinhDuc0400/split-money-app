@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useGroup } from '../context/GroupContext';
-import { LogOut, Trash2 } from 'lucide-react';
+import { LogOut, Trash2, Download } from 'lucide-react';
 import { useGroupEvents } from '../hooks/useGroupEvents';
 import { ArrowLeft, Users } from 'lucide-react';
 import { SplitType, type Expense, type Split } from '../types/expense.types';
@@ -19,11 +19,15 @@ import { AddExpense } from './AddExpense';
 import { useBalanceCalculations } from './dashboard/useBalanceCalculations';
 import { BalanceCard } from './dashboard/BalanceCard';
 import { useAppSelector, useAppDispatch } from '../store/hooks';
-import { settleAllApi, settleGuestApi, fetchTransactionsNextPage } from '../store/slices/groupSlice';
+import { settleAllApi, settleGuestApi, fetchTransactionsNextPage, exportGroupExpenses } from '../store/slices/groupSlice';
 import { pendingDeleteAdded } from '../store/slices/pendingDeletesSlice';
 import { type GroupSettlement } from '../types/group.types';
 import { calculateSettlements, isBalanceSettled } from '../lib/accounting';
 import type { Currency } from '../lib/currency';
+
+function sanitizeFilenamePart(name: string): string {
+    return name.replace(/[<>:"/\\|?*]/g, '').trim() || 'group';
+}
 
 export function GroupDetail() {
     const navigate = useNavigate();
@@ -55,6 +59,8 @@ export function GroupDetail() {
     const [leaveError, setLeaveError] = useState<string | null>(null);
     const [isDeletingGroup, setIsDeletingGroup] = useState(false);
     const [deleteGroupError, setDeleteGroupError] = useState<string | null>(null);
+    const [isExporting, setIsExporting] = useState(false);
+    const [exportError, setExportError] = useState<string | null>(null);
     const [settlingAllItems, setSettlingAllItems] = useState<GroupSettlement[] | null>(null);
     const [isSettlingAll, setIsSettlingAll] = useState(false);
     const [settleAllError, setSettleAllError] = useState<string | null>(null);
@@ -287,6 +293,28 @@ export function GroupDetail() {
         }
     };
 
+    const handleExport = async () => {
+        if (!activeGroupId || isExporting) return;
+        setIsExporting(true);
+        setExportError(null);
+        try {
+            const blob = await dispatch(exportGroupExpenses({ groupId: activeGroupId })).unwrap();
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${sanitizeFilenamePart(groupName)}-expenses.xlsx`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'Failed to export expenses';
+            setExportError(msg);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     const handleUpdateExpense = async (data: Omit<Expense, 'id' | 'createdAt'>) => {
         if (editingExpenseId && !isUpdatingExpense) {
             setIsUpdatingExpense(true);
@@ -353,6 +381,14 @@ export function GroupDetail() {
                         <InvitationBox inviteCode={activeGroup.inviteCode} />
                     )}
                     <button
+                        onClick={() => void handleExport()}
+                        disabled={isExporting || !activeGroupId}
+                        className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors disabled:opacity-50 shrink-0"
+                    >
+                        <Download className="w-3.5 h-3.5" />
+                        {isExporting ? 'Exporting…' : 'Export'}
+                    </button>
+                    <button
                         onClick={() => { setActiveTab('members'); }}
                         className="flex items-center gap-1.5 px-3 py-2 text-xs font-bold uppercase tracking-widest text-muted-foreground border border-border hover:bg-secondary rounded-xl transition-colors shrink-0"
                     >
@@ -394,6 +430,12 @@ export function GroupDetail() {
                 <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
                     <p className="text-sm font-medium">{deleteGroupError}</p>
                     <button onClick={() => setDeleteGroupError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
+                </div>
+            )}
+            {exportError && (
+                <div className="bg-destructive/10 border border-destructive/30 text-destructive rounded-xl px-4 py-3 flex items-start justify-between gap-3">
+                    <p className="text-sm font-medium">{exportError}</p>
+                    <button onClick={() => setExportError(null)} className="shrink-0 text-destructive/70 hover:text-destructive transition-colors">✕</button>
                 </div>
             )}
 
