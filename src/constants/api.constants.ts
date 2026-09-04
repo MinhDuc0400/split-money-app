@@ -12,6 +12,7 @@ export const API_ENDPOINTS = {
         BASE: `${API_BASE_URL}/groups`,
         BY_ID: (id: string) => `${API_BASE_URL}/groups/${id}`,
         JOIN: `${API_BASE_URL}/groups/join`,
+        PREVIEW: (code: string) => `${API_BASE_URL}/groups/preview/${encodeURIComponent(code)}`,
         EXPENSES: (id: string) => `${API_BASE_URL}/groups/${id}/expenses`,
         TRANSACTIONS: (id: string, cursor?: string, limit = 20) =>
             `${API_BASE_URL}/groups/${id}/transactions?limit=${limit}${cursor ? `&cursor=${cursor}` : ''}`,

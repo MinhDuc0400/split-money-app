@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, type PayloadAction } from '@reduxjs/toolkit';
-import type { GroupMeta, GroupDetail, GroupMember } from '../../types/group.types';
+import type { GroupMeta, GroupDetail, GroupMember, GroupInvitePreview } from '../../types/group.types';
 import type { CreateExpenseRequest, UpdateExpenseRequest, Expense, HistoryTransaction, PaginatedHistoryResponse, CategorySpending, PersonSpending, PersonCategorySpending, TopExpenseItem } from '../../types/expense.types';
 import type { UserBalanceResponse, GroupSettlement, GroupBalancesResponse, CreateSettlementRequest, ExchangeRatesResponse, SettleAllRequest, SettleGuestRequest } from '../../types/group.types';
 import type { Member } from '../../types/member.types';
@@ -177,6 +177,10 @@ export const deleteGroupApi = createAsyncThunk('groups/delete', async (id: strin
 
 export const joinGroup = createAsyncThunk('groups/join', async (inviteCode: string) => {
     return await api.post<GroupMember>(API_ENDPOINTS.GROUPS.JOIN, { inviteCode });
+});
+
+export const previewGroupByInviteCode = createAsyncThunk('groups/previewByInviteCode', async (inviteCode: string) => {
+    return await api.get<GroupInvitePreview>(API_ENDPOINTS.GROUPS.PREVIEW(inviteCode));
 });
 
 export const createExpense = createAsyncThunk(

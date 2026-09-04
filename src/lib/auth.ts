@@ -2,6 +2,16 @@ import type { User, JWTPayload } from '../types/auth.types';
 
 const TOKEN_KEY = 'splitmoney_auth_token';
 const USER_KEY = 'splitmoney_user';
+const PENDING_INVITE_KEY = 'splitmoney_pending_invite_code';
+// Long enough to cover "click sign-in, go through Google's consent screens,
+// come back"; short enough that a stashed code can never survive to an
+// unrelated later login.
+const PENDING_INVITE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+interface PendingInviteCodeEntry {
+    code: string;
+    ts: number; // Date.now() at the moment it was stashed
+}
 
 let cachedToken: string | null = localStorage.getItem(TOKEN_KEY);
 let cachedUser: User | null = (() => {
@@ -35,6 +45,36 @@ export const authUtils = {
     clearUser: () => {
         cachedUser = null;
         localStorage.removeItem(USER_KEY);
+    },
+    setPendingInviteCode: (code: string) => {
+        const entry: PendingInviteCodeEntry = { code, ts: Date.now() };
+        localStorage.setItem(PENDING_INVITE_KEY, JSON.stringify(entry));
+    },
+    getPendingInviteCode: (): string | null => {
+        const raw = localStorage.getItem(PENDING_INVITE_KEY);
+        if (!raw) return null;
+
+        try {
+            const entry = JSON.parse(raw) as Partial<PendingInviteCodeEntry>;
+            if (typeof entry.code !== 'string' || typeof entry.ts !== 'number') {
+                localStorage.removeItem(PENDING_INVITE_KEY);
+                return null;
+            }
+
+            const isExpired = Date.now() - entry.ts > PENDING_INVITE_TTL_MS;
+            if (isExpired) {
+                localStorage.removeItem(PENDING_INVITE_KEY);
+                return null;
+            }
+
+            return entry.code;
+        } catch {
+            localStorage.removeItem(PENDING_INVITE_KEY);
+            return null;
+        }
+    },
+    clearPendingInviteCode: () => {
+        localStorage.removeItem(PENDING_INVITE_KEY);
     },
     decodeToken: (token: string): JWTPayload | null => {
         try {

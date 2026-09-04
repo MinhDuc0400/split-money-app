@@ -29,6 +29,12 @@ export interface GroupMember {
     deletedAt: string | null;
 }
 
+export interface GroupInvitePreview {
+    name: string;
+    currency: string;
+    memberCount: number;
+}
+
 export interface GroupDetail {
     id: string;
     name: string;
