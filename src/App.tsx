@@ -5,6 +5,7 @@ import { GroupProvider } from './context/GroupContext';
 import { Layout } from './components/Layout';
 import { Login } from './components/auth/Login';
 import { AuthCallback } from './components/auth/AuthCallback';
+import { JoinInvite } from './components/auth/JoinInvite';
 
 import { useSelector } from 'react-redux';
 import { SocketManager } from './components/SocketManager';
@@ -30,8 +31,9 @@ function AppInner() {
     const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
     const isAuthPage = location.pathname === '/login' || location.pathname === '/auth/callback';
+    const isJoinPage = location.pathname.startsWith('/join/');
 
-    if (!isAuthenticated && !isAuthPage) {
+    if (!isAuthenticated && !isAuthPage && !isJoinPage) {
         return <Navigate to="/login" replace state={{ from: location }} />;
     }
 
@@ -44,6 +46,14 @@ function AppInner() {
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+            </Routes>
+        );
+    }
+
+    if (isJoinPage) {
+        return (
+            <Routes>
+                <Route path="/join/:code" element={<JoinInvite />} />
             </Routes>
         );
     }
