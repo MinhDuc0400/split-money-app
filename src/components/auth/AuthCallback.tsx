@@ -33,7 +33,17 @@ export const AuthCallback: React.FC = () => {
                     authUtils.setToken(token);
                     authUtils.setUser(user);
 
-                    navigate('/');
+                    // getPendingInviteCode() already treats a missing,
+                    // malformed, or expired (>10 min old) stash as absent,
+                    // so this falls through to navigate('/') in those cases
+                    // exactly as if no code had ever been stashed.
+                    const pendingInviteCode = authUtils.getPendingInviteCode();
+                    if (pendingInviteCode) {
+                        authUtils.clearPendingInviteCode();
+                        navigate(`/join/${pendingInviteCode}?autoJoin=1`, { replace: true });
+                    } else {
+                        navigate('/');
+                    }
                 } else {
                     dispatch(setError('Invalid token received'));
                     navigate('/login');
