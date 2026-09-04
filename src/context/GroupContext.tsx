@@ -1,14 +1,14 @@
 import React, { createContext, useContext, useMemo, useEffect, useCallback } from 'react';
 import { type Member } from '../types/member.types';
 import { type Transaction } from '../types/expense.types';
-import { type GroupMeta, type GroupDetail, type GroupMember, type UserBalanceResponse, type GroupSettlement, type GroupBalancesResponse, type CreateSettlementRequest } from '../types/group.types';
+import { type GroupMeta, type GroupDetail, type GroupMember, type GroupInvitePreview, type UserBalanceResponse, type GroupSettlement, type GroupBalancesResponse, type CreateSettlementRequest } from '../types/group.types';
 import { type Expense, type CreateExpenseRequest, type UpdateExpenseRequest, type HistoryTransaction } from '../types/expense.types';
 import { calculateBalances, calculateSettlements } from '../lib/accounting';
 
 // Redux Imports
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import {
-    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactionsFirstPage, fetchUserBalance, fetchSettlements, fetchGroupBalances, fetchSpendingByCategory, createSettlement, fetchBalanceSummary, leaveGroupApi, addGuest, renameGuest, removeGuest
+    fetchGroups, createGroup, updateGroupApi, deleteGroupApi, setActiveGroup, joinGroup, previewGroupByInviteCode, fetchGroupById, createExpense, updateExpense, deleteExpense, fetchTransactionsFirstPage, fetchUserBalance, fetchSettlements, fetchGroupBalances, fetchSpendingByCategory, createSettlement, fetchBalanceSummary, leaveGroupApi, addGuest, renameGuest, removeGuest
 } from '../store/slices/groupSlice';
 import { deleteGroupData, removeMemberAndRedistribute } from '../store/slices/financeSlice';
 
@@ -55,6 +55,7 @@ interface GroupContextType {
     switchGroup: (id: string) => void;
     deleteGroup: (id: string) => Promise<void>;
     joinGroup: (code: string) => Promise<GroupMember>;
+    previewInvite: (code: string) => Promise<GroupInvitePreview>;
     leaveGroup: (id: string) => Promise<void>;
     refreshGroups: () => void;
     overallBalances: Record<string, Record<string, number>>; // Aggregate: currency -> memberId -> balance
@@ -186,6 +187,10 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
         return joinedMember;
     }, [dispatch]);
 
+    const handlePreviewInvite = useCallback(async (code: string) => {
+        return await dispatch(previewGroupByInviteCode(code)).unwrap();
+    }, [dispatch]);
+
     const handleLeaveGroup = useCallback(async (id: string) => {
         await dispatch(leaveGroupApi(id)).unwrap();
     }, [dispatch]);
@@ -267,6 +272,7 @@ export function GroupProvider({ children }: { children: React.ReactNode }) {
                 switchGroup: handleSwitchGroup,
                 deleteGroup: handleDeleteGroup,
                 joinGroup: handleJoinGroup,
+                previewInvite: handlePreviewInvite,
                 leaveGroup: handleLeaveGroup,
                 refreshGroups: handleRefreshGroups,
                 overallBalances,
